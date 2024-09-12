@@ -22,10 +22,10 @@ endif
 
 ifndef WIN32
 	SHARED_LIB_NAME = libr11f.so
-	EXECUTABLE_NAME = r11f.exe
+	EXECUTABLE_NAME = r11f
 else
 	SHARED_LIB_NAME = libr11f.dll
-	EXECUTABLE_NAME = r11f
+	EXECUTABLE_NAME = r11f.exe
 endif
 
 define LOG

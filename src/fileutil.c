@@ -5,9 +5,14 @@ static void flip2(uint16_t *value);
 static void flip4(uint32_t *value);
 #endif
 
+R11F_INTERNAL bool read_byte(FILE *file, uint8_t *value) {
+    size_t r = fread(value, sizeof(uint8_t), 1, file);
+    return r == 1;
+}
+
 R11F_INTERNAL bool read_u2(FILE *file, uint16_t *value) {
-    int ret = fread(value, sizeof(uint16_t), 1, file);
-    if (ret != 1) {
+    size_t r = fread(value, sizeof(uint16_t), 1, file);
+    if (r != 1) {
         return false;
     }
 
@@ -19,8 +24,8 @@ R11F_INTERNAL bool read_u2(FILE *file, uint16_t *value) {
 }
 
 R11F_INTERNAL bool read_u4(FILE *file, uint32_t *value) {
-    int ret = fread(value, sizeof(uint32_t), 1, file);
-    if (ret != 1) {
+    size_t r = fread(value, sizeof(uint32_t), 1, file);
+    if (r != 1) {
         return false;
     }
 
@@ -29,6 +34,12 @@ R11F_INTERNAL bool read_u4(FILE *file, uint32_t *value) {
 #endif
 
     return true;
+}
+
+R11F_INTERNAL bool
+read_byte_array(FILE *file, uint8_t *value, size_t length) {
+    size_t r = fread(value, sizeof(uint8_t), length, file);
+    return r == length;
 }
 
 #ifdef R11F_LITTLE_ENDIAN
