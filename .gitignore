@@ -1,0 +1,7 @@
+*.o
+*.pch
+*.gch
+*.exe
+*.dll
+*.so
+r11f
