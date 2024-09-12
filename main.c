@@ -16,4 +16,7 @@ int main() {
         fprintf(stderr, "failed to read classfile\n");
         return 1;
     }
+
+    r11f_classfile_cleanup(&classfile);
+    fprintf(stdout, "success\n");
 }

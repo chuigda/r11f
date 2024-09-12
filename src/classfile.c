@@ -27,6 +27,56 @@ bool r11f_classfile_read(FILE *file, r11f_classfile_t *classfile) {
     return true;
 }
 
+void r11f_classfile_cleanup(r11f_classfile_t *classfile) {
+    if (classfile->constant_pool) {
+        for (uint16_t i = 1; i < classfile->constant_pool_count; i++) {
+            if (classfile->constant_pool[i]) {
+                free(classfile->constant_pool[i]);
+            }
+        }
+        free(classfile->constant_pool);
+    }
+
+    if (classfile->interfaces) {
+        free(classfile->interfaces);
+    }
+
+    if (classfile->fields) {
+        for (uint16_t i = 0; i < classfile->fields_count; i++) {
+            r11f_field_info_t *field_info = classfile->fields[i];
+            if (field_info->attributes) {
+                for (uint16_t j = 0; j < field_info->attributes_count; j++) {
+                    free(field_info->attributes[j]);
+                }
+                free(field_info->attributes);
+            }
+            free(field_info);
+        }
+        free(classfile->fields);
+    }
+
+    if (classfile->methods) {
+        for (uint16_t i = 0; i < classfile->methods_count; i++) {
+            r11f_method_info_t *method_info = classfile->methods[i];
+            if (method_info->attributes) {
+                for (uint16_t j = 0; j < method_info->attributes_count; j++) {
+                    free(method_info->attributes[j]);
+                }
+                free(method_info->attributes);
+            }
+            free(method_info);
+        }
+        free(classfile->methods);
+    }
+
+    if (classfile->attributes) {
+        for (uint16_t i = 0; i < classfile->attributes_count; i++) {
+            free(classfile->attributes[i]);
+        }
+        free(classfile->attributes);
+    }
+}
+
 static bool read_header(FILE *file, r11f_classfile_t *classfile) {
     if (!read_u4(file, &classfile->magic)
         || classfile->magic != 0xCAFEBABE) {
