@@ -1,7 +1,6 @@
 #include "error.h"
 
-#include <locale.h>
-#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const char* g_error_strings_zh_cn[] = {
@@ -32,9 +31,9 @@ char const* r11f_explain_error(r11f_error_t error) {
     char const* const* strings = g_error_strings_en_us;
     char const* ret = "unknown error";
 
-    char const* lang = setlocale(LC_MESSAGES, NULL);
+    char const *lang = getenv("LANG");
     if (lang) {
-        if (!strcmp(lang, "zh_CN")) {
+        if (strstr(lang, "zh")) {
             strings = g_error_strings_zh_cn;
             ret = "未知错误";
         }
