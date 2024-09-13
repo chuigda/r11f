@@ -30,15 +30,11 @@ else
 endif
 
 define LOG
-	@printf '\t%s\t%s\n' $1 $2
-endef
-
-define LOG_IN_IF
 	printf '\t%s\t%s\n' $1 $2
 endef
 
 define COMPILE
-	$(call LOG,CC,$1)
+	@$(call LOG,CC,$1)
 	@$(CC) $(CFLAGS) $1 \
 		-Iconfig -I./include -I./src/include \
 		-fPIC -c -o $2
@@ -57,12 +53,12 @@ libr11f-phony: libr11f-log build/$(SHARED_LIB_NAME)
 libr11f-log:
 	@echo Building shared library $(SHARED_LIB_NAME)
 	@if [ ! -d build ]; then \
-		$(call LOG_IN_IF,MKDIR,build); \
+		$(call LOG,MKDIR,build); \
 		mkdir -p build; \
 	fi
 
 build/$(SHARED_LIB_NAME): $(HEADER_FILES) $(OBJECT_FILES)
-	$(call LOG,LINK,$@)
+	@$(call LOG,LINK,$@)
 	@$(CC) $(CFLAGS) -fPIC -shared -o $@ $(OBJECT_FILES)
 
 .PHONY: r11f-phony r11f-log
@@ -72,7 +68,7 @@ r11f-log:
 	@echo Building executable $(EXECUTABLE_NAME)
 
 build/$(EXECUTABLE_NAME): build/main.o build/$(SHARED_LIB_NAME)
-	$(call LOG,LINK,$@)
+	@$(call LOG,LINK,$@)
 	@$(CC) $(CFLAGS) -Lbuild -Wl,-rpath=. -o $@ $^ -lr11f
 
 build/main.o: main.c $(HEADER_FILES)
