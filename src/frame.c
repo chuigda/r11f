@@ -37,7 +37,7 @@ R11F_EXPORT int64_t r11f_frame_get_int64(r11f_frame_t *frame, uint16_t entry) {
         return *(int64_t*)(frame->data + entry);
     }
     else {
-        uint64_t r = read_unaligned8(frame->data + entry - 1);
+        uint64_t r = read_unaligned8(frame->data + entry);
         return *(int64_t*)&r;
     }
 }
@@ -48,7 +48,7 @@ r11f_frame_set_int64(r11f_frame_t *frame, uint16_t entry, int64_t value) {
         *(int64_t*)(frame->data + entry) = value;
     }
     else {
-        write_unaligned8(frame->data + entry - 1, *(uint64_t*)&value);
+        write_unaligned8(frame->data + entry, *(uint64_t*)&value);
     }
 }
 
@@ -57,7 +57,7 @@ R11F_EXPORT double r11f_frame_get_double(r11f_frame_t *frame, uint16_t entry) {
         return *(double*)(frame->data + entry);
     }
     else {
-        uint64_t r = read_unaligned8(frame->data + entry - 1);
+        uint64_t r = read_unaligned8(frame->data + entry);
         return *(double*)&r;
     }
 }
@@ -68,6 +68,6 @@ r11f_frame_set_double(r11f_frame_t *frame, uint16_t entry, double value) {
         *(double*)(frame->data + entry) = value;
     }
     else {
-        write_unaligned8(frame->data + entry - 1, *(uint64_t*)&value);
+        write_unaligned8(frame->data + entry, *(uint64_t*)&value);
     }
 }
