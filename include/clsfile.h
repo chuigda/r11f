@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "defs.h"
+#include "error.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -171,7 +172,8 @@ enum {
     R11F_ACC_ENUM = 0x4000,
 };
 
-R11F_EXPORT bool r11f_classfile_read(FILE *file, r11f_classfile_t *classfile);
+R11F_EXPORT r11f_error_t
+r11f_classfile_read(FILE *file, r11f_classfile_t *classfile);
 R11F_EXPORT void r11f_classfile_cleanup(r11f_classfile_t *classfile);
 
 #ifdef __cplusplus

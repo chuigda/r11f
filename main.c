@@ -1,3 +1,4 @@
+#include <error.h>
 #include <stdio.h>
 #include <string.h>
 #include "clsfile.h"
@@ -11,12 +12,18 @@ int main(int argc, char *argv[]) {
 
             FILE *fp = fopen(argv[i], "rb");
             if (!fp) {
-                fprintf(stderr, "failed to open file\n");
+                fprintf(stderr, "error: failed to open file %s\n", argv[i]);
                 continue;
             }
 
-            if (!r11f_classfile_read(fp, &classfile)) {
-                fprintf(stderr, "failed to read classfile\n");
+            r11f_error_t err = r11f_classfile_read(fp, &classfile);
+            if (err != R11F_ERR_none) {
+                fprintf(
+                    stderr,
+                    "error: read file %s: %s\n",
+                    argv[i],
+                    r11f_explain_error(err)
+                );
                 r11f_classfile_cleanup(&classfile);
                 fclose(fp);
             }
@@ -25,5 +32,8 @@ int main(int argc, char *argv[]) {
             r11f_classfile_cleanup(&classfile);
             fclose(fp);
         }
+    }
+    else {
+        fprintf(stderr, "usage: %s --dump <classfile>...\n", argv[0]);
     }
 }
