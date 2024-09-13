@@ -153,19 +153,24 @@ typedef struct {
 
 enum {
     R11F_ACC_PUBLIC = 0x0001,
+    R11F_ACC_PRIVATE = 0x0002,
+    R11F_ACC_PROTECTED = 0x0004,
+    R11F_ACC_STATIC = 0x0008,
     R11F_ACC_FINAL = 0x0010,
     R11F_ACC_SUPER = 0x0020,
+    R11F_ACC_SYNCHRONIZED = 0x0020,
+    R11F_ACC_BRIDGE = 0x0040,
+    R11F_ACC_VARARGS = 0x0080,
+    R11F_ACC_NATIVE = 0x0100,
     R11F_ACC_INTERFACE = 0x0200,
     R11F_ACC_ABSTRACT = 0x0400,
     R11F_ACC_SYNTHETIC = 0x1000,
     R11F_ACC_ANNOTATION = 0x2000,
-    R11F_ACC_ENUM = 0x4000
+    R11F_ACC_ENUM = 0x4000,
 };
 
 bool r11f_classfile_read(FILE *file, r11f_classfile_t *classfile);
 void r11f_classfile_cleanup(r11f_classfile_t *classfile);
-
-void r11f_classfile_dump(char const* filename, r11f_classfile_t *classfile);
 
 #ifdef __cplusplus
 } /* extern "C" */

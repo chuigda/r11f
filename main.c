@@ -1,4 +1,5 @@
 #include "classfile.h"
+#include "classfile_dump.h"
 
 #include <string.h>
 

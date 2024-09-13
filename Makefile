@@ -15,6 +15,7 @@ ifndef CFLAGS
 		-Wno-pedantic \
 		-Wno-cast-function-type \
 		-Wno-char-subscripts \
+		-Wno-attributes \
 		-g \
 		-DR11F_LITTLE_ENDIAN \
 		$(EXTRA_CFLAGS)
