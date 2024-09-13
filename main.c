@@ -17,6 +17,6 @@ int main() {
         return 1;
     }
 
+    r11f_classfile_dump("Main.class", &classfile);
     r11f_classfile_cleanup(&classfile);
-    fprintf(stdout, "success\n");
 }

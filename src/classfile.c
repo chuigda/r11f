@@ -14,6 +14,10 @@ static bool read_methods(FILE *file, r11f_classfile_t *classfile);
 static bool read_attributes(FILE *file, r11f_classfile_t *classfile);
 static bool
 imp_read_attributes(FILE *file, size_t n, r11f_attribute_info_t **attributes);
+static void dump_access_flags(char const* prefix, uint16_t access_flags);
+static void dump_class_info(char const* prefix,
+                            r11f_classfile_t *classfile,
+                            uint16_t index);
 
 bool r11f_classfile_read(FILE *file, r11f_classfile_t *classfile) {
     CHKRET(read_header(file, classfile))
@@ -75,6 +79,36 @@ void r11f_classfile_cleanup(r11f_classfile_t *classfile) {
         }
         free(classfile->attributes);
     }
+}
+
+void r11f_classfile_dump(char const* filename, r11f_classfile_t *classfile) {
+    fprintf(stderr, "cf = %s\n", filename);
+    fprintf(stderr, "  cf->magic: 0x%08X\n", classfile->magic);
+    fprintf(stderr, "  cf->major_version: %d\n", classfile->major_version);
+    fprintf(stderr, "  cf->minor_version: %d\n", classfile->minor_version);
+    fprintf(
+        stderr,
+        "  cf->constant_pool_count: %d\n",
+        classfile->constant_pool_count
+    );
+
+    dump_access_flags("  cf->access_flags: ", classfile->access_flags);
+
+    dump_class_info("  cf->this_class: ", classfile, classfile->this_class);
+    dump_class_info("  cf->super_class: ", classfile, classfile->super_class);
+
+    fprintf(
+        stderr,
+        "  cf->interfaces_count: %d\n",
+        classfile->interfaces_count
+    );
+    fprintf(stderr, "  cf->fields_count: %d\n", classfile->fields_count);
+    fprintf(stderr, "  cf->methods_count: %d\n", classfile->methods_count);
+    fprintf(
+        stderr,
+        "  cf->attributes_count: %d\n",
+        classfile->attributes_count
+    );
 }
 
 static bool read_header(FILE *file, r11f_classfile_t *classfile) {
@@ -163,6 +197,7 @@ static bool read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
 
         if (size) {
             CHKRET(classfile->constant_pool[i] = malloc(size))
+            ((r11f_cpinfo_t*)classfile->constant_pool[i])->tag = tag;
         }
 
         switch (tag) {
@@ -222,6 +257,7 @@ static bool read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
                     classfile->constant_pool[i];
                 CHKRET(read_u4(file, &long_info->high_bytes))
                 CHKRET(read_u4(file, &long_info->low_bytes))
+                i++;
                 break;
             }
             case R11F_CONSTANT_Double: {
@@ -229,6 +265,7 @@ static bool read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
                     classfile->constant_pool[i];
                 CHKRET(read_u4(file, &double_info->high_bytes))
                 CHKRET(read_u4(file, &double_info->low_bytes))
+                i++;
                 break;
             }
             case R11F_CONSTANT_NameAndType: {
@@ -247,6 +284,7 @@ static bool read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
                 );
                 CHKRET(classfile->constant_pool[i] = utf8_info)
 
+                utf8_info->tag = R11F_CONSTANT_Utf8;
                 utf8_info->length = length;
                 CHKRET(read_byte_array(file, utf8_info->bytes, length))
                 break;
@@ -394,4 +432,86 @@ imp_read_attributes(FILE *file, size_t n, r11f_attribute_info_t **attributes) {
     }
 
     return true;
+}
+
+static void dump_access_flags(char const* prefix, uint16_t access_flags) {
+    fprintf(stderr, "%s", prefix);
+    if (access_flags & R11F_ACC_PUBLIC) {
+        fprintf(stderr, "ACC_PUBLIC ");
+    }
+    if (access_flags & R11F_ACC_FINAL) {
+        fprintf(stderr, "ACC_FINAL ");
+    }
+    if (access_flags & R11F_ACC_SUPER) {
+        fprintf(stderr, "ACC_SUPER ");
+    }
+    if (access_flags & R11F_ACC_INTERFACE) {
+        fprintf(stderr, "ACC_INTERFACE ");
+    }
+    if (access_flags & R11F_ACC_ABSTRACT) {
+        fprintf(stderr, "ACC_ABSTRACT ");
+    }
+    if (access_flags & R11F_ACC_SYNTHETIC) {
+        fprintf(stderr, "ACC_SYNTHETIC ");
+    }
+    if (access_flags & R11F_ACC_ANNOTATION) {
+        fprintf(stderr, "ACC_ANNOTATION ");
+    }
+    if (access_flags & R11F_ACC_ENUM) {
+        fprintf(stderr, "ACC_ENUM ");
+    }
+    fprintf(stderr, "\n");
+}
+
+static void dump_class_info(char const* prefix,
+                            r11f_classfile_t *classfile,
+                            uint16_t index) {
+    fprintf(stderr, "%s", prefix);
+    if (index == 0) {
+        fprintf(stderr, "#0 NULL\n");
+        return;
+    }
+
+    if (index >= classfile->constant_pool_count) {
+        fprintf(stderr, "out of bounds (%d)\n", index);
+        return;
+    }
+
+    r11f_constant_class_info_t *class_info =
+        classfile->constant_pool[index];
+    if (class_info->tag != R11F_CONSTANT_Class) {
+        fprintf(
+            stderr,
+            "invalid tag (%d), constant pool entry (%d)\n",
+            class_info->tag,
+            index
+        );
+        return;
+    }
+
+    if (class_info->name_index >= classfile->constant_pool_count) {
+        fprintf(stderr, "name_index out of bounds (%d)\n", class_info->name_index);
+        return;
+    }
+
+    r11f_constant_utf8_info_t *utf8_info =
+        classfile->constant_pool[class_info->name_index];
+    if (utf8_info->tag != R11F_CONSTANT_Utf8) {
+        fprintf(
+            stderr,
+            "name invalid tag (%d), constant pool entry (%d)\n",
+            utf8_info->tag,
+            class_info->name_index
+        );
+        return;
+    }
+
+    fprintf(
+        stderr,
+        "#%d -> #%d %.*s\n",
+        index,
+        class_info->name_index,
+        utf8_info->length,
+        utf8_info->bytes
+    );
 }

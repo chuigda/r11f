@@ -165,6 +165,8 @@ enum {
 bool r11f_classfile_read(FILE *file, r11f_classfile_t *classfile);
 void r11f_classfile_cleanup(r11f_classfile_t *classfile);
 
+void r11f_classfile_dump(char const* filename, r11f_classfile_t *classfile);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
