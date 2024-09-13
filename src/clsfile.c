@@ -3,7 +3,9 @@
 #include <error.h>
 #include <inttypes.h>
 #include <stdlib.h>
-#include "clsfile/cpool.h"
+#include "class.h"
+#include "class/cpool.h"
+#include "class/attrib.h"
 #include "fileutil.h"
 
 #ifdef R11F_LITTLE_ENDIAN
@@ -36,97 +38,47 @@
         return R11F_ERR_malformed_classfile; \
     }
 
-static r11f_error_t read_header(FILE *file, r11f_classfile_t *classfile);
-static r11f_error_t read_constant_pool(FILE *file, r11f_classfile_t *classfile);
-static r11f_error_t read_classinfo(FILE *file, r11f_classfile_t *classfile);
-static r11f_error_t read_interfaces(FILE *file, r11f_classfile_t *classfile);
-static r11f_error_t read_fields(FILE *file, r11f_classfile_t *classfile);
-static r11f_error_t read_methods(FILE *file, r11f_classfile_t *classfile);
-static r11f_error_t read_attributes(FILE *file, r11f_classfile_t *classfile);
+static r11f_error_t read_header(FILE *file, r11f_class_t *clazz);
+static r11f_error_t read_constant_pool(FILE *file, r11f_class_t *clazz);
+static r11f_error_t read_classinfo(FILE *file, r11f_class_t *clazz);
+static r11f_error_t read_interfaces(FILE *file, r11f_class_t *clazz);
+static r11f_error_t read_fields(FILE *file, r11f_class_t *clazz);
+static r11f_error_t read_methods(FILE *file, r11f_class_t *clazz);
+static r11f_error_t read_attributes(FILE *file, r11f_class_t *clazz);
 static r11f_error_t imp_read_attributes(FILE *file,
                                         size_t n,
                                         r11f_attribute_info_t **attributes,
-                                        r11f_classfile_t *classfile);
+                                        r11f_class_t *clazz);
 
 #ifdef R11F_LITTLE_ENDIAN
 static void preprocess_code_attribute(r11f_attribute_info_t *attribute);
 #endif
 
-r11f_error_t r11f_classfile_read(FILE *file, r11f_classfile_t *classfile) {
-    CHKERR_RET(read_header(file, classfile))
-    CHKERR_RET(read_constant_pool(file, classfile))
-    CHKERR_RET(read_classinfo(file, classfile))
-    CHKERR_RET(read_interfaces(file, classfile))
-    CHKERR_RET(read_fields(file, classfile))
-    CHKERR_RET(read_methods(file, classfile))
-    CHKERR_RET(read_attributes(file, classfile))
+R11F_EXPORT r11f_error_t r11f_classfile_read(FILE *file, r11f_class_t *clazz) {
+    CHKERR_RET(read_header(file, clazz))
+    CHKERR_RET(read_constant_pool(file, clazz))
+    CHKERR_RET(read_classinfo(file, clazz))
+    CHKERR_RET(read_interfaces(file, clazz))
+    CHKERR_RET(read_fields(file, clazz))
+    CHKERR_RET(read_methods(file, clazz))
+    CHKERR_RET(read_attributes(file, clazz))
 
     return R11F_success;
 }
 
-void r11f_classfile_cleanup(r11f_classfile_t *classfile) {
-    if (classfile->constant_pool) {
-        for (uint16_t i = 1; i < classfile->constant_pool_count; i++) {
-            if (classfile->constant_pool[i]) {
-                free(classfile->constant_pool[i]);
-            }
-        }
-        free(classfile->constant_pool);
-    }
-
-    if (classfile->interfaces) {
-        free(classfile->interfaces);
-    }
-
-    if (classfile->fields) {
-        for (uint16_t i = 0; i < classfile->fields_count; i++) {
-            r11f_field_info_t *field_info = classfile->fields[i];
-            if (field_info->attributes) {
-                for (uint16_t j = 0; j < field_info->attributes_count; j++) {
-                    free(field_info->attributes[j]);
-                }
-                free(field_info->attributes);
-            }
-            free(field_info);
-        }
-        free(classfile->fields);
-    }
-
-    if (classfile->methods) {
-        for (uint16_t i = 0; i < classfile->methods_count; i++) {
-            r11f_method_info_t *method_info = classfile->methods[i];
-            if (method_info->attributes) {
-                for (uint16_t j = 0; j < method_info->attributes_count; j++) {
-                    free(method_info->attributes[j]);
-                }
-                free(method_info->attributes);
-            }
-            free(method_info);
-        }
-        free(classfile->methods);
-    }
-
-    if (classfile->attributes) {
-        for (uint16_t i = 0; i < classfile->attributes_count; i++) {
-            free(classfile->attributes[i]);
-        }
-        free(classfile->attributes);
-    }
-}
-
-static r11f_error_t read_header(FILE *file, r11f_classfile_t *classfile) {
-    if (!read_u4(file, &classfile->magic)
-        || classfile->magic != 0xCAFEBABE) {
+static r11f_error_t read_header(FILE *file, r11f_class_t *clazz) {
+    if (!read_u4(file, &clazz->magic)
+        || clazz->magic != 0xCAFEBABE) {
         return R11F_ERR_malformed_classfile;
     }
 
-    if (!read_u2(file, &classfile->minor_version)
-        || classfile->minor_version != 0) {
+    if (!read_u2(file, &clazz->minor_version)
+        || clazz->minor_version != 0) {
         return R11F_ERR_malformed_classfile;
     }
 
-    if (!read_u2(file, &classfile->major_version)
-        || classfile->major_version != 52) {
+    if (!read_u2(file, &clazz->major_version)
+        || clazz->major_version != 52) {
         return R11F_ERR_malformed_classfile;
     }
 
@@ -134,14 +86,14 @@ static r11f_error_t read_header(FILE *file, r11f_classfile_t *classfile) {
 }
 
 static r11f_error_t
-read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
-    CHKREAD(read_u2, file, &classfile->constant_pool_count)
-    CHKFALSE_RET(classfile->constant_pool = calloc(
-        classfile->constant_pool_count,
+read_constant_pool(FILE *file, r11f_class_t *clazz) {
+    CHKREAD(read_u2, file, &clazz->constant_pool_count)
+    CHKFALSE_RET(clazz->constant_pool = calloc(
+        clazz->constant_pool_count,
         sizeof(r11f_cpinfo_t *)
     ), R11F_ERR_out_of_memory)
 
-    for (uint16_t i = 1; i < classfile->constant_pool_count; i++) {
+    for (uint16_t i = 1; i < clazz->constant_pool_count; i++) {
         uint8_t tag;
         CHKREAD(read_byte, file, &tag)
 
@@ -195,35 +147,35 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
         }
 
         if (size) {
-            CHKFALSE_RET(classfile->constant_pool[i] = malloc(size),
+            CHKFALSE_RET(clazz->constant_pool[i] = malloc(size),
                          R11F_ERR_out_of_memory)
-            ((r11f_cpinfo_t*)classfile->constant_pool[i])->tag = tag;
+            ((r11f_cpinfo_t*)clazz->constant_pool[i])->tag = tag;
         }
 
         switch (tag) {
             case R11F_CONSTANT_Class: {
                 r11f_constant_class_info_t *class_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u2, file, &class_info->name_index)
                 break;
             }
             case R11F_CONSTANT_Fieldref: {
                 r11f_constant_fieldref_info_t *fieldref_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u2, file, &fieldref_info->class_index)
                 CHKREAD(read_u2, file, &fieldref_info->name_and_type_index)
                 break;
             }
             case R11F_CONSTANT_Methodref: {
                 r11f_constant_methodref_info_t *methodref_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u2, file, &methodref_info->class_index)
                 CHKREAD(read_u2, file, &methodref_info->name_and_type_index)
                 break;
             }
             case R11F_CONSTANT_InterfaceMethodref: {
                 r11f_constant_interface_methodref_info_t *interface_methodref_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u2, file, &interface_methodref_info->class_index)
                 CHKREAD(
                     read_u2,
@@ -234,25 +186,25 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
             }
             case R11F_CONSTANT_String: {
                 r11f_constant_string_info_t *string_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u2, file, &string_info->string_index)
                 break;
             }
             case R11F_CONSTANT_Integer: {
                 r11f_constant_integer_info_t *integer_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u4, file, &integer_info->bytes)
                 break;
             }
             case R11F_CONSTANT_Float: {
                 r11f_constant_float_info_t *float_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u4, file, &float_info->bytes)
                 break;
             }
             case R11F_CONSTANT_Long: {
                 r11f_constant_long_info_t *long_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u4, file, &long_info->high_bytes)
                 CHKREAD(read_u4, file, &long_info->low_bytes)
                 i++;
@@ -260,7 +212,7 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
             }
             case R11F_CONSTANT_Double: {
                 r11f_constant_double_info_t *double_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u4, file, &double_info->high_bytes)
                 CHKREAD(read_u4, file, &double_info->low_bytes)
                 i++;
@@ -268,7 +220,7 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
             }
             case R11F_CONSTANT_NameAndType: {
                 r11f_constant_name_and_type_info_t *name_and_type_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u2, file, &name_and_type_info->name_index)
                 CHKREAD(read_u2, file, &name_and_type_info->descriptor_index)
                 break;
@@ -280,7 +232,7 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
                 r11f_constant_utf8_info_t *utf8_info = malloc(
                     sizeof(r11f_constant_utf8_info_t) + length
                 );
-                CHKFALSE_RET(classfile->constant_pool[i] = utf8_info,
+                CHKFALSE_RET(clazz->constant_pool[i] = utf8_info,
                              R11F_ERR_out_of_memory)
 
                 utf8_info->tag = R11F_CONSTANT_Utf8;
@@ -290,20 +242,20 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
             }
             case R11F_CONSTANT_MethodHandle: {
                 r11f_constant_method_handle_info_t *method_handle_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_byte, file, &method_handle_info->reference_kind)
                 CHKREAD(read_u2, file, &method_handle_info->reference_index)
                 break;
             }
             case R11F_CONSTANT_MethodType: {
                 r11f_constant_method_type_info_t *method_type_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(read_u2, file, &method_type_info->descriptor_index)
                 break;
             }
             case R11F_CONSTANT_InvokeDynamic: {
                 r11f_constant_invoke_dynamic_info_t *invoke_dynamic_info =
-                    classfile->constant_pool[i];
+                    clazz->constant_pool[i];
                 CHKREAD(
                     read_u2,
                     file,
@@ -323,38 +275,38 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
 }
 
 static r11f_error_t
-read_classinfo(FILE *file, r11f_classfile_t *classfile) {
-    CHKREAD(read_u2, file, &classfile->access_flags)
-    CHKREAD(read_u2, file, &classfile->this_class)
-    CHKREAD(read_u2, file, &classfile->super_class)
+read_classinfo(FILE *file, r11f_class_t *clazz) {
+    CHKREAD(read_u2, file, &clazz->access_flags)
+    CHKREAD(read_u2, file, &clazz->this_class)
+    CHKREAD(read_u2, file, &clazz->super_class)
 
     return R11F_success;
 }
 
 static r11f_error_t
-read_interfaces(FILE *file, r11f_classfile_t *classfile) {
-    CHKREAD(read_u2, file, &classfile->interfaces_count)
-    CHKFALSE_RET(classfile->interfaces = malloc(
-        classfile->interfaces_count * sizeof(uint16_t)
+read_interfaces(FILE *file, r11f_class_t *clazz) {
+    CHKREAD(read_u2, file, &clazz->interfaces_count)
+    CHKFALSE_RET(clazz->interfaces = malloc(
+        clazz->interfaces_count * sizeof(uint16_t)
     ), R11F_ERR_out_of_memory)
 
-    for (uint16_t i = 0; i < classfile->interfaces_count; i++) {
-        CHKREAD(read_u2, file, &classfile->interfaces[i])
+    for (uint16_t i = 0; i < clazz->interfaces_count; i++) {
+        CHKREAD(read_u2, file, &clazz->interfaces[i])
     }
 
     return R11F_success;
 }
 
 static r11f_error_t
-read_fields(FILE *file, r11f_classfile_t *classfile) {
-    CHKREAD(read_u2, file, &classfile->fields_count)
-    CHKFALSE_RET(classfile->fields = malloc(
-        classfile->fields_count * sizeof(r11f_field_info_t *)
+read_fields(FILE *file, r11f_class_t *clazz) {
+    CHKREAD(read_u2, file, &clazz->fields_count)
+    CHKFALSE_RET(clazz->fields = malloc(
+        clazz->fields_count * sizeof(r11f_field_info_t *)
     ), R11F_ERR_out_of_memory)
 
-    for (uint16_t i = 0; i < classfile->fields_count; i++) {
+    for (uint16_t i = 0; i < clazz->fields_count; i++) {
         r11f_field_info_t *field_info = malloc(sizeof(r11f_field_info_t));
-        CHKFALSE_RET(classfile->fields[i] = field_info,
+        CHKFALSE_RET(clazz->fields[i] = field_info,
                      R11F_ERR_out_of_memory)
 
         CHKREAD(read_u2, file, &field_info->access_flags)
@@ -369,7 +321,7 @@ read_fields(FILE *file, r11f_classfile_t *classfile) {
             file,
             field_info->attributes_count,
             field_info->attributes,
-            classfile
+            clazz
         ))
     }
 
@@ -377,15 +329,15 @@ read_fields(FILE *file, r11f_classfile_t *classfile) {
 }
 
 static r11f_error_t
-read_methods(FILE *file, r11f_classfile_t *classfile) {
-    CHKREAD(read_u2, file, &classfile->methods_count)
-    CHKFALSE_RET(classfile->methods = malloc(
-        classfile->methods_count * sizeof(r11f_method_info_t *)
+read_methods(FILE *file, r11f_class_t *clazz) {
+    CHKREAD(read_u2, file, &clazz->methods_count)
+    CHKFALSE_RET(clazz->methods = malloc(
+        clazz->methods_count * sizeof(r11f_method_info_t *)
     ), R11F_ERR_out_of_memory)
 
-    for (uint16_t i = 0; i < classfile->methods_count; i++) {
+    for (uint16_t i = 0; i < clazz->methods_count; i++) {
         r11f_method_info_t *method_info = malloc(sizeof(r11f_method_info_t));
-        CHKFALSE_RET(classfile->methods[i] = method_info,
+        CHKFALSE_RET(clazz->methods[i] = method_info,
                      R11F_ERR_out_of_memory)
 
         CHKREAD(read_u2, file, &method_info->access_flags)
@@ -400,7 +352,7 @@ read_methods(FILE *file, r11f_classfile_t *classfile) {
             file,
             method_info->attributes_count,
             method_info->attributes,
-            classfile
+            clazz
         ))
     }
 
@@ -408,17 +360,17 @@ read_methods(FILE *file, r11f_classfile_t *classfile) {
 }
 
 static r11f_error_t
-read_attributes(FILE *file, r11f_classfile_t *classfile) {
-    CHKREAD(read_u2, file, &classfile->attributes_count)
-    CHKFALSE_RET(classfile->attributes = malloc(
-        classfile->attributes_count * sizeof(r11f_attribute_info_t*)
+read_attributes(FILE *file, r11f_class_t *clazz) {
+    CHKREAD(read_u2, file, &clazz->attributes_count)
+    CHKFALSE_RET(clazz->attributes = malloc(
+        clazz->attributes_count * sizeof(r11f_attribute_info_t*)
     ), R11F_ERR_out_of_memory)
 
     CHKERR_RET(imp_read_attributes(
         file,
-        classfile->attributes_count,
-        classfile->attributes,
-        classfile
+        clazz->attributes_count,
+        clazz->attributes,
+        clazz
     ))
     return R11F_success;
 }
@@ -426,14 +378,14 @@ read_attributes(FILE *file, r11f_classfile_t *classfile) {
 static r11f_error_t imp_read_attributes(FILE *file,
                                         size_t n,
                                         r11f_attribute_info_t **attributes,
-                                        r11f_classfile_t *classfile) {
+                                        r11f_class_t *clazz) {
     for (size_t i = 0; i < n; i++) {
         uint16_t attribute_name_index;
         CHKREAD(read_u2, file, &attribute_name_index)
-        if (attribute_name_index >= classfile->constant_pool_count) {
+        if (attribute_name_index >= clazz->constant_pool_count) {
             return R11F_ERR_malformed_classfile;
         }
-        r11f_cpinfo_t *cpinfo = classfile->constant_pool[attribute_name_index];
+        r11f_cpinfo_t *cpinfo = clazz->constant_pool[attribute_name_index];
         if (cpinfo->tag != R11F_CONSTANT_Utf8) {
             return R11F_ERR_malformed_classfile;
         }

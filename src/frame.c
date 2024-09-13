@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include "byteutil.h"
-#include "clsfile.h"
 
 R11F_EXPORT
 r11f_frame_t *r11f_frame_alloc(uint16_t max_locals, uint16_t max_stack) {
@@ -14,8 +13,7 @@ r11f_frame_t *r11f_frame_alloc(uint16_t max_locals, uint16_t max_stack) {
     }
 
     frame->parent = NULL;
-    frame->constant_pool_count = 0;
-    frame->constant_pool = NULL;
+    frame->classfile = NULL;
     frame->max_locals = max_locals;
     frame->max_stack = max_stack;
     frame->sp = 0;
@@ -26,11 +24,14 @@ r11f_frame_t *r11f_frame_alloc(uint16_t max_locals, uint16_t max_stack) {
 }
 
 R11F_EXPORT void
-r11f_frame_setref(r11f_frame_t *frame, r11f_classfile_t *classfile) {
-    frame->constant_pool_count = classfile->constant_pool_count;
-    frame->constant_pool = classfile->constant_pool;
+r11f_frame_set_class(r11f_frame_t *frame, r11f_class_t *classfile) {
+    frame->classfile = classfile;
 }
 
+R11F_EXPORT void
+r11f_frame_set_method(r11f_frame_t *frame, r11f_method_info_t *method_info) {
+    frame->method_info = method_info;
+}
 
 R11F_EXPORT int64_t r11f_frame_get_int64(r11f_frame_t *frame, uint16_t entry) {
     if (entry % 2 == 0) {

@@ -14,8 +14,8 @@ extern "C" {
 struct st_r11f_frame {
     r11f_frame_t *parent;
 
-    uint16_t constant_pool_count;
-    void **constant_pool;
+    r11f_class_t *classfile;
+    r11f_method_info_t *method_info;
 
     uint16_t max_locals;
     uint16_t max_stack;
@@ -30,7 +30,10 @@ R11F_EXPORT
 r11f_frame_t *r11f_frame_alloc(uint16_t max_locals, uint16_t max_stack);
 
 R11F_EXPORT void
-r11f_frame_setref(r11f_frame_t *frame, r11f_classfile_t *classfile);
+r11f_frame_set_class(r11f_frame_t *frame, r11f_class_t *classfile);
+
+R11F_EXPORT void
+r11f_frame_set_method(r11f_frame_t *frame, r11f_method_info_t *method_info);
 
 R11F_EXPORT int64_t r11f_frame_get_int64(r11f_frame_t *frame, uint16_t entry);
 R11F_EXPORT void

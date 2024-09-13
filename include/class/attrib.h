@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct st_r11f_attribute_info {
     uint16_t attribute_name_index;
     uint32_t attribute_length;
     uint8_t info[];

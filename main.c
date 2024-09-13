@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "clsfile.h"
+#include "class.h"
 #include "cfdump.h"
 #include "clsmgr.h"
 #include "error.h"
@@ -12,8 +13,8 @@ void drill_main(void);
 int main(int argc, char *argv[]) {
     if (argc >= 3 && !strcmp(argv[1], "--dump")) {
         for (int i = 2; i < argc; i++) {
-            r11f_classfile_t classfile;
-            memset(&classfile, 0, sizeof(r11f_classfile_t));
+            r11f_class_t classfile;
+            memset(&classfile, 0, sizeof(r11f_class_t));
 
             FILE *fp = fopen(argv[i], "rb");
             if (!fp) {
@@ -29,13 +30,13 @@ int main(int argc, char *argv[]) {
                     argv[i],
                     r11f_explain_error(err)
                 );
-                r11f_classfile_cleanup(&classfile);
+                r11f_class_cleanup(&classfile);
                 fclose(fp);
                 continue;
             }
 
-            r11f_classfile_dump(argv[i], &classfile);
-            r11f_classfile_cleanup(&classfile);
+            r11f_class_dump(argv[i], &classfile);
+            r11f_class_cleanup(&classfile);
             fclose(fp);
         }
     }
@@ -62,7 +63,7 @@ void drill_main(void) {
     FILE *file = fopen("test/Add.class", "rb");
     assert(file && "failed to open file");
 
-    r11f_classfile_t *classfile = calloc(1, sizeof(r11f_classfile_t));
+    r11f_class_t *classfile = calloc(1, sizeof(r11f_class_t));
     assert(classfile && "failed to allocate classfile");
 
     r11f_error_t err = r11f_classfile_read(file, classfile);
@@ -72,7 +73,7 @@ void drill_main(void) {
     err = r11f_classmgr_add_class(mgr, classfile, &classid);
     assert(err == R11F_success && "failed to add class");
 
-    r11f_classfile_t *found = r11f_classmgr_find_class(mgr, "tech/icey/r11f/test/Add");
+    r11f_class_t *found = r11f_classmgr_find_class(mgr, "tech/icey/r11f/test/Add");
     assert(found && "failed to find class by name");
 
     found = r11f_classmgr_find_class_id(mgr, classid);

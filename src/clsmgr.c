@@ -3,8 +3,8 @@
 #include <error.h>
 #include <stdlib.h>
 #include <string.h>
-#include "clsfile.h"
-#include "clsfile/cpool.h"
+#include "class.h"
+#include "class/cpool.h"
 #include "defs.h"
 
 typedef struct st_imp_hashtable_node hashtable_node_t;
@@ -15,7 +15,7 @@ struct st_imp_hashtable_node {
     uint32_t classid;
     uint16_t class_name_len;
     char const *class_name;
-    r11f_classfile_t *classfile;
+    r11f_class_t *class;
 };
 
 struct st_r11f_classmgr {
@@ -51,7 +51,7 @@ R11F_EXPORT r11f_classmgr_t *r11f_classmgr_alloc_hash_size(size_t hash_size) {
 }
 
 R11F_EXPORT r11f_error_t r11f_classmgr_add_class(r11f_classmgr_t *mgr,
-                                                 r11f_classfile_t *classfile,
+                                                 r11f_class_t *classfile,
                                                  uint32_t *classid) {
     uint16_t class_info_index = classfile->this_class;
     r11f_constant_class_info_t *classinfo =
@@ -70,13 +70,13 @@ R11F_EXPORT r11f_error_t r11f_classmgr_add_class(r11f_classmgr_t *mgr,
 
     hashtable_node_t *new_name_node = NULL;
     hashtable_node_t *new_id_node = NULL;
-    if (name_table_root_node->classfile) {
+    if (name_table_root_node->class) {
         new_name_node = malloc(sizeof(hashtable_node_t));
         if (!new_name_node) {
             return R11F_ERR_out_of_memory;
         }
     }
-    if (id_table_root_node->classfile) {
+    if (id_table_root_node->class) {
         new_id_node = malloc(sizeof(hashtable_node_t));
         if (!new_id_node) {
             free(new_name_node);
@@ -100,38 +100,38 @@ R11F_EXPORT r11f_error_t r11f_classmgr_add_class(r11f_classmgr_t *mgr,
     updated_name_node->classid = *classid;
     updated_name_node->class_name_len = class_name_len;
     updated_name_node->class_name = class_name;
-    updated_name_node->classfile = classfile;
+    updated_name_node->class = classfile;
 
     updated_id_node->classid = *classid;
     updated_id_node->class_name_len = class_name_len;
     updated_id_node->class_name = class_name;
-    updated_id_node->classfile = classfile;
+    updated_id_node->class = classfile;
 
     mgr->next_classid++;
     return R11F_success;
 }
 
-R11F_EXPORT r11f_classfile_t *r11f_classmgr_find_class(r11f_classmgr_t *mgr,
+R11F_EXPORT r11f_class_t *r11f_classmgr_find_class(r11f_classmgr_t *mgr,
                                                        char const *name) {
     size_t hash = bkdr_hash(name) % mgr->hash_size;
     hashtable_node_t *node = &mgr->hash_table_name[hash];
     for (; node; node = node->next) {
-        if (node->classfile &&
+        if (node->class &&
             !strncmp(node->class_name, name, node->class_name_len)) {
-            return node->classfile;
+            return node->class;
         }
     }
 
     return NULL;
 }
 
-R11F_EXPORT r11f_classfile_t *r11f_classmgr_find_class_id(r11f_classmgr_t *mgr,
+R11F_EXPORT r11f_class_t *r11f_classmgr_find_class_id(r11f_classmgr_t *mgr,
                                                           uint32_t classid) {
     size_t hash = classid % mgr->hash_size;
     hashtable_node_t *node = &mgr->hash_table_id[hash];
     for (; node; node = node->next) {
-        if (node->classfile && node->classid == classid) {
-            return node->classfile;
+        if (node->class && node->classid == classid) {
+            return node->class;
         }
     }
 
@@ -141,17 +141,17 @@ R11F_EXPORT r11f_classfile_t *r11f_classmgr_find_class_id(r11f_classmgr_t *mgr,
 R11F_EXPORT void r11f_classmgr_free(r11f_classmgr_t *mgr) {
     for (size_t i = 0; i < mgr->hash_size; i++) {
         hashtable_node_t *node = &mgr->hash_table_name[i];
-        if (node->classfile) {
-            r11f_classfile_cleanup(node->classfile);
-            free(node->classfile);
+        if (node->class) {
+            r11f_class_cleanup(node->class);
+            free(node->class);
         }
 
         node = node->next;
         while (node) {
             hashtable_node_t *next = node->next;
-            if (node->classfile) {
-                r11f_classfile_cleanup(node->classfile);
-                free(node->classfile);
+            if (node->class) {
+                r11f_class_cleanup(node->class);
+                free(node->class);
             }
             free(node);
             node = next;

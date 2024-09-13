@@ -2,64 +2,66 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include "clsfile.h"
+#include "class.h"
+#include "class/attrib.h"
+#include "class/cpool.h"
 
 static void dump_access_flags(char const* prefix, uint16_t access_flags);
 static void dump_constant_pool_item(void *cpinfo);
 static void dump_class_info(char const* prefix,
-                            r11f_classfile_t *classfile,
+                            r11f_class_t *clazz,
                             uint16_t index);
-static void dump_method_info(r11f_classfile_t *classfile,
+static void dump_method_info(r11f_class_t *clazz,
                              r11f_method_info_t *method_info);
-static void dump_attribute_name(r11f_classfile_t *classfile,
+static void dump_attribute_name(r11f_class_t *clazz,
                                 r11f_attribute_info_t *attribute_info);
 static void dump_attribute_info(char const *prefix,
                                 r11f_attribute_info_t *attribute_info);
-static void dump_name(r11f_classfile_t *classfile,
+static void dump_name(r11f_class_t *clazz,
                       uint16_t index,
                       uint16_t parent_index);
 
-void r11f_classfile_dump(char const* filename, r11f_classfile_t *classfile) {
+void r11f_class_dump(char const* filename, r11f_class_t *clazz) {
     fprintf(stderr, "cf = %s\n", filename);
-    fprintf(stderr, "  cf->magic: 0x%08X\n", classfile->magic);
-    fprintf(stderr, "  cf->major_version: %d\n", classfile->major_version);
-    fprintf(stderr, "  cf->minor_version: %d\n", classfile->minor_version);
+    fprintf(stderr, "  cf->magic: 0x%08X\n", clazz->magic);
+    fprintf(stderr, "  cf->major_version: %d\n", clazz->major_version);
+    fprintf(stderr, "  cf->minor_version: %d\n", clazz->minor_version);
     fprintf(
         stderr,
         "  cf->constant_pool_count: %d\n",
-        classfile->constant_pool_count
+        clazz->constant_pool_count
     );
-    for (uint16_t i = 1; i < classfile->constant_pool_count; i++) {
+    for (uint16_t i = 1; i < clazz->constant_pool_count; i++) {
         fprintf(stderr, "    [%d] ", i);
-        dump_constant_pool_item(classfile->constant_pool[i]);
+        dump_constant_pool_item(clazz->constant_pool[i]);
     }
 
-    dump_access_flags("  cf->access_flags: ", classfile->access_flags);
+    dump_access_flags("  cf->access_flags: ", clazz->access_flags);
 
-    dump_class_info("  cf->this_class: ", classfile, classfile->this_class);
-    dump_class_info("  cf->super_class: ", classfile, classfile->super_class);
+    dump_class_info("  cf->this_class: ", clazz, clazz->this_class);
+    dump_class_info("  cf->super_class: ", clazz, clazz->super_class);
 
     fprintf(
         stderr,
         "  cf->interfaces_count: %d\n",
-        classfile->interfaces_count
+        clazz->interfaces_count
     );
 
-    fprintf(stderr, "  cf->fields_count: %d\n", classfile->fields_count);
-    fprintf(stderr, "  cf->methods_count: %d\n", classfile->methods_count);
-    for (uint16_t i = 0; i < classfile->methods_count; i++) {
-        dump_method_info(classfile, classfile->methods[i]);
+    fprintf(stderr, "  cf->fields_count: %d\n", clazz->fields_count);
+    fprintf(stderr, "  cf->methods_count: %d\n", clazz->methods_count);
+    for (uint16_t i = 0; i < clazz->methods_count; i++) {
+        dump_method_info(clazz, clazz->methods[i]);
     }
 
     fprintf(
         stderr,
         "  cf->attributes_count: %d\n",
-        classfile->attributes_count
+        clazz->attributes_count
     );
-    for (uint16_t i = 0; i < classfile->attributes_count; i++) {
-        r11f_attribute_info_t *attribute_info = classfile->attributes[i];
+    for (uint16_t i = 0; i < clazz->attributes_count; i++) {
+        r11f_attribute_info_t *attribute_info = clazz->attributes[i];
         fprintf(stderr, "    [%d] ", i);
-        dump_attribute_name(classfile, attribute_info);
+        dump_attribute_name(clazz, attribute_info);
         dump_attribute_info("        ", attribute_info);
     }
 }
@@ -241,7 +243,7 @@ static void dump_constant_pool_item(void *cpinfo) {
 }
 
 static void dump_class_info(char const* prefix,
-                            r11f_classfile_t *classfile,
+                            r11f_class_t *clazz,
                             uint16_t index) {
     fprintf(stderr, "%s", prefix);
     if (index == 0) {
@@ -249,13 +251,13 @@ static void dump_class_info(char const* prefix,
         return;
     }
 
-    if (index >= classfile->constant_pool_count) {
+    if (index >= clazz->constant_pool_count) {
         fprintf(stderr, "out of bounds (%d)\n", index);
         return;
     }
 
     r11f_constant_class_info_t *class_info =
-        classfile->constant_pool[index];
+        clazz->constant_pool[index];
     if (class_info->tag != R11F_CONSTANT_Class) {
         fprintf(
             stderr,
@@ -266,17 +268,17 @@ static void dump_class_info(char const* prefix,
         return;
     }
 
-    dump_name(classfile, class_info->name_index, index);
+    dump_name(clazz, class_info->name_index, index);
 }
 
-static void dump_method_info(r11f_classfile_t *classfile,
+static void dump_method_info(r11f_class_t *clazz,
                              r11f_method_info_t *method_info) {
     fprintf(stderr, "    method_info->name_index: ");
-    dump_name(classfile, method_info->name_index, 0);
+    dump_name(clazz, method_info->name_index, 0);
     dump_access_flags("      method_info->access_flags: ", method_info->access_flags);
 
     fprintf(stderr, "      method_info->descriptor_index: ");
-    dump_name(classfile, method_info->descriptor_index, 0);
+    dump_name(clazz, method_info->descriptor_index, 0);
 
     fprintf(
         stderr,
@@ -286,15 +288,15 @@ static void dump_method_info(r11f_classfile_t *classfile,
     for (uint16_t i = 0; i < method_info->attributes_count; i++) {
         r11f_attribute_info_t *attribute_info = method_info->attributes[i];
         fprintf(stderr, "        [%d] ", i);
-        dump_attribute_name(classfile, attribute_info);
+        dump_attribute_name(clazz, attribute_info);
         dump_attribute_info("            ", attribute_info);
     }
 }
 
-static void dump_attribute_name(r11f_classfile_t *classfile,
+static void dump_attribute_name(r11f_class_t *clazz,
                                 r11f_attribute_info_t *attribute_info) {
     fprintf(stderr, "attribute_info->attribute_name_index: ");
-    dump_name(classfile, attribute_info->attribute_name_index, 0);
+    dump_name(clazz, attribute_info->attribute_name_index, 0);
 }
 
 static void dump_attribute_info(char const *prefix,
@@ -316,15 +318,15 @@ static void dump_attribute_info(char const *prefix,
     }
 }
 
-void dump_name(r11f_classfile_t *classfile,
+void dump_name(r11f_class_t *clazz,
                uint16_t index,
                uint16_t parent_index) {
-    if (index >= classfile->constant_pool_count) {
+    if (index >= clazz->constant_pool_count) {
         fprintf(stderr, "name_index out of bounds (%d)\n", index);
         return;
     }
 
-    r11f_constant_utf8_info_t *utf8_info = classfile->constant_pool[index];
+    r11f_constant_utf8_info_t *utf8_info = clazz->constant_pool[index];
     if (utf8_info->tag != R11F_CONSTANT_Utf8) {
         fprintf(
             stderr,
