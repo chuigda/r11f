@@ -55,6 +55,12 @@ void r11f_classfile_dump(char const* filename, r11f_classfile_t *classfile) {
         "  cf->attributes_count: %d\n",
         classfile->attributes_count
     );
+    for (uint16_t i = 0; i < classfile->attributes_count; i++) {
+        r11f_attribute_info_t *attribute_info = classfile->attributes[i];
+        fprintf(stderr, "    [%d] ", i);
+        dump_attribute_name(classfile, attribute_info);
+        dump_attribute_info("        ", attribute_info);
+    }
 }
 
 static void dump_access_flags(char const* prefix, uint16_t access_flags) {
