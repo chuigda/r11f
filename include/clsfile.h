@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "defs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -169,8 +171,8 @@ enum {
     R11F_ACC_ENUM = 0x4000,
 };
 
-bool r11f_classfile_read(FILE *file, r11f_classfile_t *classfile);
-void r11f_classfile_cleanup(r11f_classfile_t *classfile);
+R11F_EXPORT bool r11f_classfile_read(FILE *file, r11f_classfile_t *classfile);
+R11F_EXPORT void r11f_classfile_cleanup(r11f_classfile_t *classfile);
 
 #ifdef __cplusplus
 } /* extern "C" */

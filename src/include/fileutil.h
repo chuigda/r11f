@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "internal.h"
+#include "defs.h"
 
 R11F_INTERNAL bool read_byte(FILE *file, uint8_t *value);
 R11F_INTERNAL bool read_u2(FILE *file, uint16_t *value);

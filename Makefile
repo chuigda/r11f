@@ -17,7 +17,7 @@ ifndef CFLAGS
 		-Wno-char-subscripts \
 		-Wno-attributes \
 		-g \
-		-DR11F_LITTLE_ENDIAN \
+		-DR11F_LITTLE_ENDIAN=1 \
 		$(EXTRA_CFLAGS)
 endif
 
@@ -55,7 +55,7 @@ libr11f-log:
 
 $(SHARED_LIB_NAME): $(HEADER_FILES) $(OBJECT_FILES)
 	$(call LOG,LINK,$@)
-	@$(CC) $(CFLAGS) -fPIC -shared -o $@ $^
+	@$(CC) $(CFLAGS) -fPIC -shared -o $@ $(OBJECT_FILES)
 
 .PHONY: r11f-phony r11f-log
 r11f-phony: r11f-log $(EXECUTABLE_NAME)
@@ -65,7 +65,7 @@ r11f-log:
 
 $(EXECUTABLE_NAME): main.o $(SHARED_LIB_NAME)
 	$(call LOG,LINK,$@)
-	@$(CC) $(CFLAGS) -L. -lr11f -o $@ $^
+	@$(CC) $(CFLAGS) -L. -Wl,-rpath=. -o $@ $^ -lr11f
 
 main.o: main.c $(HEADER_FILES)
 	$(call COMPILE,$<,$@)

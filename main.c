@@ -1,7 +1,7 @@
-#include "classfile.h"
-#include "classfile_dump.h"
-
+#include <stdio.h>
 #include <string.h>
+#include "clsfile.h"
+#include "cfdump.h"
 
 int main(int argc, char *argv[]) {
     if (argc >= 3 && !strcmp(argv[1], "--dump")) {

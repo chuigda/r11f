@@ -1,4 +1,4 @@
-#include "classfile.h"
+#include "cfdump.h"
 
 #include <inttypes.h>
 #include <stdlib.h>
