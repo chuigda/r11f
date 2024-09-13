@@ -7,6 +7,7 @@
 #include "cfdump.h"
 #include "clsmgr.h"
 #include "error.h"
+#include "vm.h"
 
 void drill_main(void);
 
@@ -69,18 +70,27 @@ void drill_main(void) {
     r11f_error_t err = r11f_classfile_read(file, classfile);
     assert(err == R11F_success && "failed to read classfile");
 
+    fclose(file);
+
     uint32_t classid;
     err = r11f_classmgr_add_class(mgr, classfile, &classid);
     assert(err == R11F_success && "failed to add class");
 
-    r11f_class_t *found = r11f_classmgr_find_class(mgr, "tech/icey/r11f/test/Add");
-    assert(found && "failed to find class by name");
+    r11f_vm_t vm;
+    vm.classmgr = mgr;
+    err = r11f_vm_invoke(
+        &vm,
+        "tech/icey/r11f/test/Add",
+        "add",
+        "(II)I",
+        2,
+        (uint32_t[]){114, 514}
+    );
 
-    found = r11f_classmgr_find_class_id(mgr, classid);
-    assert(found && "failed to find class by id");
+    if (err != R11F_success) {
+        fprintf(stderr, "error: %s\n", r11f_explain_error(err));
+        assert(0 && "failed to invoke method");
+    }
 
     r11f_classmgr_free(mgr);
-    fclose(file);
-
-    fprintf(stderr, "drill tests passed\n");
 }

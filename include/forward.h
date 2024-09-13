@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-typedef struct st_r11f_classfile r11f_class_t;
+typedef struct st_r11f_class r11f_class_t;
 typedef struct st_r11f_frame r11f_frame_t;
 typedef struct st_r11f_classmgr r11f_classmgr_t;
 typedef struct st_r11f_method_info r11f_method_info_t;

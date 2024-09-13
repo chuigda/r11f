@@ -14,6 +14,12 @@ enum {
     R11F_ERR_out_of_memory = 1,
     R11F_ERR_malformed_classfile = 2,
     R11F_ERR_duplicate_class = 3,
+
+    R11F_ERR_class_not_found = 4,
+    R11F_ERR_method_not_found = 5,
+    R11F_ERR_cannot_invoke_abstract_method = 6,
+    R11F_ERR_cannot_invoke_native_method = 7,
+    R11F_ERR_cannot_invoke_non_static_method = 8,
 };
 
 char const* r11f_explain_error(r11f_error_t error);

@@ -26,7 +26,7 @@ typedef struct st_r11f_method_info {
     r11f_attribute_info_t **attributes;
 } r11f_method_info_t;
 
-typedef struct st_r11f_classfile {
+typedef struct st_r11f_class {
     uint32_t magic;
     uint16_t major_version;
     uint16_t minor_version;
@@ -63,10 +63,10 @@ enum {
     R11F_ACC_ENUM = 0x4000,
 };
 
-R11F_EXPORT void r11f_class_cleanup(r11f_class_t *classfile);
+R11F_EXPORT void r11f_class_cleanup(r11f_class_t *clazz);
 
 R11F_EXPORT r11f_method_info_t*
-r11f_class_resolve_method(r11f_class_t *classfile,
+r11f_class_resolve_method(r11f_class_t *clazz,
                           char const *name,
                           uint16_t name_len,
                           char const *descriptor,

@@ -59,7 +59,7 @@ libr11f-log:
 
 build/$(SHARED_LIB_NAME): $(HEADER_FILES) $(OBJECT_FILES)
 	@$(call LOG,LINK,$@)
-	@$(CC) $(CFLAGS) -fPIC -shared -o $@ $(OBJECT_FILES)
+	@$(CC) $(CFLAGS) -fPIC -shared -fvisibility=hidden -o $@ $(OBJECT_FILES)
 
 .PHONY: r11f-phony r11f-log
 r11f-phony: r11f-log build/$(EXECUTABLE_NAME)

@@ -1,10 +1,33 @@
 #include "frame.h"
 
+#include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "byteutil.h"
+#include "class.h"
+#include "class/attrib.h"
+#include "class/cpool.h"
 
-R11F_EXPORT
-r11f_frame_t *r11f_frame_alloc(uint16_t max_locals, uint16_t max_stack) {
+R11F_EXPORT r11f_frame_t*
+r11f_frame_alloc(r11f_class_t *clazz, r11f_method_info_t *method_info) {
+    r11f_attribute_info_t *code_info = NULL;
+    for (uint16_t i = 0; i < method_info->attributes_count; i++) {
+        r11f_attribute_info_t *attr = method_info->attributes[i];
+        r11f_constant_utf8_info_t *name_info =
+            clazz->constant_pool[attr->attribute_name_index];
+        if (!strncmp("Code", (char*)name_info->bytes, name_info->length)) {
+            code_info = attr;
+            break;
+        }
+    }
+    assert(code_info && "attribute Code not found in method"
+                        ", is this method abstract or native?");
+
+    uint16_t max_stack = read_unaligned2(code_info->info);
+    uint16_t max_locals = read_unaligned2(code_info->info + 2);
+    uint16_t code_length = read_unaligned2(code_info->info + 4);
+    uint8_t *code = code_info->info + 8;
+
     r11f_frame_t *frame = malloc(
         sizeof(r11f_frame_t) + (max_locals + max_stack) * sizeof(uint32_t)
     );
@@ -13,7 +36,11 @@ r11f_frame_t *r11f_frame_alloc(uint16_t max_locals, uint16_t max_stack) {
     }
 
     frame->parent = NULL;
-    frame->classfile = NULL;
+    frame->clazz = clazz;
+    frame->method_info = method_info;
+    frame->pc = 0;
+    frame->code_length = code_length;
+    frame->code = code;
     frame->max_locals = max_locals;
     frame->max_stack = max_stack;
     frame->sp = 0;
@@ -21,16 +48,6 @@ r11f_frame_t *r11f_frame_alloc(uint16_t max_locals, uint16_t max_stack) {
     frame->stack = frame->data + max_locals;
 
     return frame;
-}
-
-R11F_EXPORT void
-r11f_frame_set_class(r11f_frame_t *frame, r11f_class_t *classfile) {
-    frame->classfile = classfile;
-}
-
-R11F_EXPORT void
-r11f_frame_set_method(r11f_frame_t *frame, r11f_method_info_t *method_info) {
-    frame->method_info = method_info;
 }
 
 R11F_EXPORT int64_t r11f_frame_get_int64(r11f_frame_t *frame, uint16_t entry) {
