@@ -1,6 +1,7 @@
 {
     "clangd.fallbackFlags": [
         "-I${workspaceFolder}/include",
-        "-I${workspaceFolder}/src/include"
+        "-I${workspaceFolder}/src/include",
+        "-DR11F_LITTLE_ENDIAN=1"
     ]
 }

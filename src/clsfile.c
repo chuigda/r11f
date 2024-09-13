@@ -3,7 +3,13 @@
 #include <error.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include "clsfile/cpool.h"
 #include "fileutil.h"
+
+#ifdef R11F_LITTLE_ENDIAN
+#include <string.h>
+#include "byteutil.h"
+#endif
 
 #define CHKERR_RET(expr) \
     { \
@@ -37,8 +43,14 @@ static r11f_error_t read_interfaces(FILE *file, r11f_classfile_t *classfile);
 static r11f_error_t read_fields(FILE *file, r11f_classfile_t *classfile);
 static r11f_error_t read_methods(FILE *file, r11f_classfile_t *classfile);
 static r11f_error_t read_attributes(FILE *file, r11f_classfile_t *classfile);
-static r11f_error_t
-imp_read_attributes(FILE *file, size_t n, r11f_attribute_info_t **attributes);
+static r11f_error_t imp_read_attributes(FILE *file,
+                                        size_t n,
+                                        r11f_attribute_info_t **attributes,
+                                        r11f_classfile_t *classfile);
+
+#ifdef R11F_LITTLE_ENDIAN
+static void preprocess_code_attribute(r11f_attribute_info_t *attribute);
+#endif
 
 r11f_error_t r11f_classfile_read(FILE *file, r11f_classfile_t *classfile) {
     CHKERR_RET(read_header(file, classfile))
@@ -356,7 +368,8 @@ read_fields(FILE *file, r11f_classfile_t *classfile) {
         CHKERR_RET(imp_read_attributes(
             file,
             field_info->attributes_count,
-            field_info->attributes
+            field_info->attributes,
+            classfile
         ))
     }
 
@@ -386,7 +399,8 @@ read_methods(FILE *file, r11f_classfile_t *classfile) {
         CHKERR_RET(imp_read_attributes(
             file,
             method_info->attributes_count,
-            method_info->attributes
+            method_info->attributes,
+            classfile
         ))
     }
 
@@ -403,16 +417,26 @@ read_attributes(FILE *file, r11f_classfile_t *classfile) {
     CHKERR_RET(imp_read_attributes(
         file,
         classfile->attributes_count,
-        classfile->attributes
+        classfile->attributes,
+        classfile
     ))
     return R11F_ERR_none;
 }
 
-static r11f_error_t
-imp_read_attributes(FILE *file, size_t n, r11f_attribute_info_t **attributes) {
+static r11f_error_t imp_read_attributes(FILE *file,
+                                        size_t n,
+                                        r11f_attribute_info_t **attributes,
+                                        r11f_classfile_t *classfile) {
     for (size_t i = 0; i < n; i++) {
         uint16_t attribute_name_index;
         CHKREAD(read_u2, file, &attribute_name_index)
+        if (attribute_name_index >= classfile->constant_pool_count) {
+            return R11F_ERR_malformed_classfile;
+        }
+        r11f_cpinfo_t *cpinfo = classfile->constant_pool[attribute_name_index];
+        if (cpinfo->tag != R11F_CONSTANT_Utf8) {
+            return R11F_ERR_malformed_classfile;
+        }
 
         uint32_t attribute_length;
         CHKREAD(read_u4, file, &attribute_length)
@@ -426,7 +450,43 @@ imp_read_attributes(FILE *file, size_t n, r11f_attribute_info_t **attributes) {
         attribute_info->attribute_name_index = attribute_name_index;
         attribute_info->attribute_length = attribute_length;
         CHKREADBYTES(file, attribute_info->info, attribute_length)
+
+#ifdef R11F_LITTLE_ENDIAN
+        r11f_constant_utf8_info_t *utf8_info =
+            (r11f_constant_utf8_info_t*)cpinfo;
+        if (utf8_info->length == 4 &&
+            !strncmp((char*)utf8_info->bytes, "Code", 4)) {
+            preprocess_code_attribute(attribute_info);
+        }
     }
+#endif
 
     return R11F_ERR_none;
 }
+
+#ifdef R11F_LITTLE_ENDIAN
+static void preprocess_code_attribute(r11f_attribute_info_t *attribute) {
+    uint8_t *info = attribute->info;
+    flip2_unaligned(info); /* Code_attribute->max_stack */
+    flip2_unaligned(info + 2); /* Code_attribute->max_locals */
+    flip4_unaligned(info + 4); /* Code_attribute->code_length */
+    uint32_t code_length = read_unaligned4(info + 4);
+
+    /* info = Code_attribute->exception_table_length */
+    info = info + 8 + code_length;
+    flip2_unaligned(info); /* Code_attribute->exception_table_length */
+    uint16_t exception_table_length = read_unaligned2(info);
+
+    /* info = Code_attribute->exception_table */
+    info = info + 2;
+    for (uint16_t i = 0; i < exception_table_length; i++) {
+        flip2_unaligned(info); /* exception_table->start_pc */
+        flip2_unaligned(info + 2); /* exception_table->end_pc */
+        flip2_unaligned(info + 4); /* exception_table->handler_pc */
+        flip2_unaligned(info + 6); /* exception_table->catch_type */
+        info = info + 8;
+    }
+
+    /* TODO: we ignore Code_attribute->attributes for now */
+}
+#endif

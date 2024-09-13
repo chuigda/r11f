@@ -40,7 +40,7 @@ define COMPILE
 		-fPIC -c -o $2
 endef
 
-HEADER_FILES = $(wildcard include/*.h) $(wildcard src/include/*.h)
+HEADER_FILES = $(wildcard include/*.h) $(wildcard include/**/*.h) $(wildcard src/include/*.h)
 SOURCE_FILES = $(wildcard src/*.c)
 OBJECT_FILES = $(patsubst src/%.c,build/%.o,$(SOURCE_FILES))
 
