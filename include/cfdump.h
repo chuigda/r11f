@@ -1,7 +1,8 @@
 #ifndef R11F_CLASSDUMP_H
 #define R11F_CLASSDUMP_H
 
-#include "clsfile.h"
+#include "defs.h"
+#include "forward.h"
 
 #ifdef __cplusplus
 extern "C" {

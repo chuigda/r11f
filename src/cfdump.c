@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include "clsfile.h"
 
 static void dump_access_flags(char const* prefix, uint16_t access_flags);
 static void dump_constant_pool_item(void *cpinfo);

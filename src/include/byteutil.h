@@ -11,6 +11,8 @@ R11F_INTERNAL uint16_t read_unaligned2(void* addr);
 R11F_INTERNAL void write_unaligned2(void* addr, uint16_t value);
 R11F_INTERNAL uint32_t read_unaligned4(void* addr);
 R11F_INTERNAL void write_unaligned4(void* addr, uint32_t value);
+R11F_INTERNAL uint64_t read_unaligned8(void* addr);
+R11F_INTERNAL void write_unaligned8(void* addr, uint64_t value);
 
 R11F_INTERNAL void flip2_unaligned(void* addr);
 R11F_INTERNAL void flip4_unaligned(void* addr);

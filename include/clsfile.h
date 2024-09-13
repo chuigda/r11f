@@ -30,7 +30,7 @@ typedef struct {
     r11f_attribute_info_t **attributes;
 } r11f_method_info_t;
 
-typedef struct {
+typedef struct st_r11f_classfile {
     uint32_t magic;
     uint16_t major_version;
     uint16_t minor_version;
