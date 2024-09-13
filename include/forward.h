@@ -7,6 +7,7 @@ extern "C" {
 
 typedef struct st_r11f_classfile r11f_classfile_t;
 typedef struct st_r11f_frame r11f_frame_t;
+typedef struct st_r11f_classmgr r11f_classmgr_t;
 
 #ifdef __cplusplus
 } /* extern "C" */

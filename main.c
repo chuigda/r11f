@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
             }
 
             r11f_error_t err = r11f_classfile_read(fp, &classfile);
-            if (err != R11F_ERR_none) {
+            if (err != R11F_success) {
                 fprintf(
                     stderr,
                     "error: read file %s: %s\n",

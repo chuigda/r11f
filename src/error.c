@@ -5,15 +5,17 @@
 #include <string.h>
 
 static const char* g_error_strings_zh_cn[] = {
-    [R11F_ERR_none] = "操作成功完成",
+    [R11F_success] = "操作成功完成",
     [R11F_ERR_out_of_memory] = "内存不足",
-    [R11F_ERR_malformed_classfile] = ".class 文件格式错误"
+    [R11F_ERR_malformed_classfile] = ".class 文件格式错误",
+    [R11F_ERR_duplicate_class] = "重复的类"
 };
 
 static const char* g_error_strings_en_us[] = {
-    [R11F_ERR_none] = "operation completed successfully",
+    [R11F_success] = "operation completed successfully",
     [R11F_ERR_out_of_memory] = "out of memory",
-    [R11F_ERR_malformed_classfile] = "malformed .class file"
+    [R11F_ERR_malformed_classfile] = "malformed .class file",
+    [R11F_ERR_duplicate_class] = "duplicate class"
 };
 
 char const* r11f_explain_error(r11f_error_t error) {

@@ -14,7 +14,7 @@
 #define CHKERR_RET(expr) \
     { \
         r11f_error_t errtemp = (expr); \
-        if (errtemp != R11F_ERR_none) { \
+        if (errtemp != R11F_success) { \
             return errtemp; \
         } \
     }
@@ -61,7 +61,7 @@ r11f_error_t r11f_classfile_read(FILE *file, r11f_classfile_t *classfile) {
     CHKERR_RET(read_methods(file, classfile))
     CHKERR_RET(read_attributes(file, classfile))
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 void r11f_classfile_cleanup(r11f_classfile_t *classfile) {
@@ -130,7 +130,7 @@ static r11f_error_t read_header(FILE *file, r11f_classfile_t *classfile) {
         return R11F_ERR_malformed_classfile;
     }
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 static r11f_error_t
@@ -319,7 +319,7 @@ read_constant_pool(FILE *file, r11f_classfile_t *classfile) {
         }
     }
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 static r11f_error_t
@@ -328,7 +328,7 @@ read_classinfo(FILE *file, r11f_classfile_t *classfile) {
     CHKREAD(read_u2, file, &classfile->this_class)
     CHKREAD(read_u2, file, &classfile->super_class)
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 static r11f_error_t
@@ -342,7 +342,7 @@ read_interfaces(FILE *file, r11f_classfile_t *classfile) {
         CHKREAD(read_u2, file, &classfile->interfaces[i])
     }
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 static r11f_error_t
@@ -373,7 +373,7 @@ read_fields(FILE *file, r11f_classfile_t *classfile) {
         ))
     }
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 static r11f_error_t
@@ -404,7 +404,7 @@ read_methods(FILE *file, r11f_classfile_t *classfile) {
         ))
     }
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 static r11f_error_t
@@ -420,7 +420,7 @@ read_attributes(FILE *file, r11f_classfile_t *classfile) {
         classfile->attributes,
         classfile
     ))
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 static r11f_error_t imp_read_attributes(FILE *file,
@@ -461,7 +461,7 @@ static r11f_error_t imp_read_attributes(FILE *file,
     }
 #endif
 
-    return R11F_ERR_none;
+    return R11F_success;
 }
 
 #ifdef R11F_LITTLE_ENDIAN
