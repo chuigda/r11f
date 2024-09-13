@@ -13,20 +13,6 @@ typedef struct {
     uint8_t info[];
 } r11f_attribute_info_t;
 
-typedef struct {
-    uint16_t start_pc;
-    uint16_t end_pc;
-    uint16_t handler_pc;
-    uint16_t catch_type;
-} r11f_exception_table;
-
-typedef struct {
-    uint16_t max_stacks;
-    uint16_t max_locals;
-    uint32_t code_length;
-    uint8_t *code;
-} r11f_code_attribute;
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
