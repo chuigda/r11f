@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
                 );
                 r11f_classfile_cleanup(&classfile);
                 fclose(fp);
+                continue;
             }
 
             r11f_classfile_dump(argv[i], &classfile);
