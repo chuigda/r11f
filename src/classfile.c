@@ -1,5 +1,6 @@
 #include "classfile.h"
 
+#include <inttypes.h>
 #include <stdlib.h>
 #include "fileutil.h"
 
@@ -15,6 +16,7 @@ static bool read_attributes(FILE *file, r11f_classfile_t *classfile);
 static bool
 imp_read_attributes(FILE *file, size_t n, r11f_attribute_info_t **attributes);
 static void dump_access_flags(char const* prefix, uint16_t access_flags);
+static void dump_constant_pool_item(void *cpinfo);
 static void dump_class_info(char const* prefix,
                             r11f_classfile_t *classfile,
                             uint16_t index);
@@ -91,6 +93,10 @@ void r11f_classfile_dump(char const* filename, r11f_classfile_t *classfile) {
         "  cf->constant_pool_count: %d\n",
         classfile->constant_pool_count
     );
+    for (uint16_t i = 1; i < classfile->constant_pool_count; i++) {
+        fprintf(stderr, "    [%d] ", i);
+        dump_constant_pool_item(classfile->constant_pool[i]);
+    }
 
     dump_access_flags("  cf->access_flags: ", classfile->access_flags);
 
@@ -461,6 +467,135 @@ static void dump_access_flags(char const* prefix, uint16_t access_flags) {
         fprintf(stderr, "ACC_ENUM ");
     }
     fprintf(stderr, "\n");
+}
+
+static void dump_constant_pool_item(void *cpinfo) {
+    if (!cpinfo) {
+        fprintf(stderr, "NULL\n");
+        return;
+    }
+
+    uint8_t tag = ((r11f_cpinfo_t*)cpinfo)->tag;
+    switch (tag) {
+        case R11F_CONSTANT_Class: {
+            r11f_constant_class_info_t *class_info = cpinfo;
+            fprintf(
+                stderr,
+                "Class name_index=#%d\n",
+                class_info->name_index
+            );
+            break;
+        }
+        case R11F_CONSTANT_Fieldref: {
+            r11f_constant_fieldref_info_t *fieldref_info = cpinfo;
+            fprintf(
+                stderr,
+                "Fieldref class_index=#%d name_and_type_index=#%d\n",
+                fieldref_info->class_index,
+                fieldref_info->name_and_type_index
+            );
+            break;
+        }
+        case R11F_CONSTANT_Methodref: {
+            r11f_constant_methodref_info_t *methodref_info = cpinfo;
+            fprintf(
+                stderr,
+                "Methodref class_index=#%d name_and_type_index=#%d\n",
+                methodref_info->class_index,
+                methodref_info->name_and_type_index
+            );
+            break;
+        }
+        case R11F_CONSTANT_InterfaceMethodref: {
+            r11f_constant_interface_methodref_info_t *interface_methodref_info = cpinfo;
+            fprintf(
+                stderr,
+                "InterfaceMethodref class_index=#%d name_and_type_index=#%d\n",
+                interface_methodref_info->class_index,
+                interface_methodref_info->name_and_type_index
+            );
+            break;
+        }
+        case R11F_CONSTANT_String: {
+            r11f_constant_string_info_t *string_info = cpinfo;
+            fprintf(
+                stderr,
+                "String string_index=#%d\n",
+                string_info->string_index
+            );
+            break;
+        }
+        case R11F_CONSTANT_Integer: {
+            r11f_constant_integer_info_t *integer_info = cpinfo;
+            fprintf(
+                stderr,
+                "Integer bytes=0x%08X\n",
+                integer_info->bytes
+            );
+            break;
+        }
+        case R11F_CONSTANT_Float: {
+            r11f_constant_float_info_t *float_info = cpinfo;
+            fprintf(
+                stderr,
+                "Float bytes=0x%08X\n",
+                float_info->bytes
+            );
+            break;
+        }
+        case R11F_CONSTANT_Long: {
+            r11f_constant_long_info_t *long_info = cpinfo;
+            uint64_t value =
+                ((uint64_t)long_info->high_bytes << 32) | long_info->low_bytes;
+            fprintf(
+                stderr,
+                "Long high_bytes=0x%08X low_bytes=0x%08X value=%" PRIu64 "\n",
+                long_info->high_bytes,
+                long_info->low_bytes,
+                value
+            );
+            break;
+        }
+        case R11F_CONSTANT_Double: {
+            r11f_constant_double_info_t *double_info = cpinfo;
+            uint64_t value =
+                ((uint64_t)double_info->high_bytes << 32) | double_info->low_bytes;
+            double dvalue = *(double*)&value;
+            fprintf(
+                stderr,
+                "Double high_bytes=0x%08X low_bytes=0x%08X value=%f\n",
+                double_info->high_bytes,
+                double_info->low_bytes,
+                dvalue
+            );
+            break;
+        }
+        case R11F_CONSTANT_NameAndType: {
+            r11f_constant_name_and_type_info_t *name_and_type_info = cpinfo;
+            fprintf(
+                stderr,
+                "NameAndType name_index=#%d descriptor_index=#%d\n",
+                name_and_type_info->name_index,
+                name_and_type_info->descriptor_index
+            );
+            break;
+        }
+        case R11F_CONSTANT_Utf8: {
+            r11f_constant_utf8_info_t *utf8_info = cpinfo;
+            fprintf(
+                stderr,
+                "Utf8 length=%d bytes=\"%.*s\"\n",
+                utf8_info->length,
+                utf8_info->length,
+                utf8_info->bytes
+            );
+            break;
+        }
+        default: {
+            fprintf(stderr, "INVALID (tag %d)\n", tag);
+            break;
+        }
+    }
 }
 
 static void dump_class_info(char const* prefix,
