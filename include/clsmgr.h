@@ -22,7 +22,7 @@ R11F_EXPORT r11f_classfile_t *r11f_classmgr_find_class(r11f_classmgr_t *mgr,
                                                        char const *name);
 R11F_EXPORT r11f_classfile_t *r11f_classmgr_find_class_id(r11f_classmgr_t *mgr,
                                                           uint32_t classid);
-void r11f_classmgr_free(r11f_classmgr_t *mgr);
+R11F_EXPORT void r11f_classmgr_free(r11f_classmgr_t *mgr);
 
 #ifdef __cplusplus
 } /* extern "C" */

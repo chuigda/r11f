@@ -5,6 +5,7 @@
 #include <string.h>
 #include "clsfile.h"
 #include "clsfile/cpool.h"
+#include "defs.h"
 
 typedef struct st_imp_hashtable_node hashtable_node_t;
 
@@ -35,8 +36,8 @@ R11F_EXPORT r11f_classmgr_t *r11f_classmgr_alloc(void) {
 
 R11F_EXPORT r11f_classmgr_t *r11f_classmgr_alloc_hash_size(size_t hash_size) {
     r11f_classmgr_t *mgr = calloc(
-        sizeof(r11f_classmgr_t) + 2 * hash_size * sizeof(hashtable_node_t),
-        1
+        1,
+        sizeof(r11f_classmgr_t) + 2 * hash_size * sizeof(hashtable_node_t)
     );
     if (!mgr) {
         return NULL;
@@ -132,6 +133,10 @@ R11F_EXPORT r11f_classfile_t *r11f_classmgr_find_class_id(r11f_classmgr_t *mgr,
     }
 
     return NULL;
+}
+
+R11F_EXPORT void r11f_classmgr_free(r11f_classmgr_t *mgr) {
+    free(mgr);
 }
 
 static size_t bkdr_hash(char const *str) {
