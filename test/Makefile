@@ -2,7 +2,7 @@ ifndef JAVAC
 	JAVAC=javac
 endif
 
-JAVAC_FLAGS=--release 8
+JAVAC_FLAGS=--release 8 -Xlint:-options
 
 SOURCE_FILES = $(wildcard *.java)
 CLASS_FILES = $(patsubst %.java,%.class,$(SOURCE_FILES))
