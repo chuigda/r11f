@@ -53,7 +53,10 @@ R11F_EXPORT r11f_classmgr_t *r11f_classmgr_alloc_hash_size(size_t hash_size) {
 R11F_EXPORT r11f_error_t r11f_classmgr_add_class(r11f_classmgr_t *mgr,
                                                  r11f_classfile_t *classfile,
                                                  uint32_t *classid) {
-    uint16_t name_index = classfile->this_class;
+    uint16_t class_info_index = classfile->this_class;
+    r11f_constant_class_info_t *classinfo =
+        classfile->constant_pool[class_info_index];
+    uint16_t name_index = classinfo->name_index;
     r11f_constant_utf8_info_t *info = classfile->constant_pool[name_index];
     size_t class_name_len = info->length;
     char const *class_name = (char const*)info->bytes;
@@ -136,6 +139,34 @@ R11F_EXPORT r11f_classfile_t *r11f_classmgr_find_class_id(r11f_classmgr_t *mgr,
 }
 
 R11F_EXPORT void r11f_classmgr_free(r11f_classmgr_t *mgr) {
+    for (size_t i = 0; i < mgr->hash_size; i++) {
+        hashtable_node_t *node = &mgr->hash_table_name[i];
+        if (node->classfile) {
+            r11f_classfile_cleanup(node->classfile);
+            free(node->classfile);
+        }
+
+        node = node->next;
+        while (node) {
+            hashtable_node_t *next = node->next;
+            if (node->classfile) {
+                r11f_classfile_cleanup(node->classfile);
+                free(node->classfile);
+            }
+            free(node);
+            node = next;
+        }
+    }
+
+    for (size_t i = 0; i < mgr->hash_size; i++) {
+        hashtable_node_t *node = mgr->hash_table_id[i].next;
+        while (node) {
+            hashtable_node_t *next = node->next;
+            free(node);
+            node = next;
+        }
+    }
+
     free(mgr);
 }
 

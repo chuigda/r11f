@@ -72,7 +72,7 @@ void drill_main(void) {
     err = r11f_classmgr_add_class(mgr, classfile, &classid);
     assert(err == R11F_success && "failed to add class");
 
-    r11f_classfile_t *found = r11f_classmgr_find_class(mgr, "tech/icey/drill/Add");
+    r11f_classfile_t *found = r11f_classmgr_find_class(mgr, "tech/icey/r11f/test/Add");
     assert(found && "failed to find class by name");
 
     found = r11f_classmgr_find_class_id(mgr, classid);
@@ -80,4 +80,6 @@ void drill_main(void) {
 
     r11f_classmgr_free(mgr);
     fclose(file);
+
+    fprintf(stderr, "drill tests passed\n");
 }
