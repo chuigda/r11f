@@ -33,6 +33,10 @@ define LOG
 	@printf '\t%s\t%s\n' $1 $2
 endef
 
+define LOG_IN_IF
+	printf '\t%s\t%s\n' $1 $2
+endef
+
 define COMPILE
 	$(call LOG,CC,$1)
 	@$(CC) $(CFLAGS) $1 \
@@ -42,41 +46,41 @@ endef
 
 HEADER_FILES = $(wildcard include/*.h) $(wildcard src/include/*.h)
 SOURCE_FILES = $(wildcard src/*.c)
-OBJECT_FILES = $(patsubst src/%.c,%.o,$(SOURCE_FILES))
+OBJECT_FILES = $(patsubst src/%.c,build/%.o,$(SOURCE_FILES))
 
 .PHONY: all
 all: libr11f-phony r11f-phony
 
 .PHONY: libr11f-phony libr11f-log
-libr11f-phony: libr11f-log $(SHARED_LIB_NAME)
+libr11f-phony: libr11f-log build/$(SHARED_LIB_NAME)
 
 libr11f-log:
 	@echo Building shared library $(SHARED_LIB_NAME)
+	@if [ ! -d build ]; then \
+		$(call LOG_IN_IF,MKDIR,build); \
+		mkdir -p build; \
+	fi
 
-$(SHARED_LIB_NAME): $(HEADER_FILES) $(OBJECT_FILES)
+build/$(SHARED_LIB_NAME): $(HEADER_FILES) $(OBJECT_FILES)
 	$(call LOG,LINK,$@)
 	@$(CC) $(CFLAGS) -fPIC -shared -o $@ $(OBJECT_FILES)
 
 .PHONY: r11f-phony r11f-log
-r11f-phony: r11f-log $(EXECUTABLE_NAME)
+r11f-phony: r11f-log build/$(EXECUTABLE_NAME)
 
 r11f-log:
 	@echo Building executable $(EXECUTABLE_NAME)
 
-$(EXECUTABLE_NAME): main.o $(SHARED_LIB_NAME)
+build/$(EXECUTABLE_NAME): build/main.o build/$(SHARED_LIB_NAME)
 	$(call LOG,LINK,$@)
-	@$(CC) $(CFLAGS) -L. -Wl,-rpath=. -o $@ $^ -lr11f
+	@$(CC) $(CFLAGS) -Lbuild -Wl,-rpath=. -o $@ $^ -lr11f
 
-main.o: main.c $(HEADER_FILES)
+build/main.o: main.c $(HEADER_FILES)
 	$(call COMPILE,$<,$@)
 
-%.o: src/%.c $(HEADER_FILES)
+build/%.o: src/%.c $(HEADER_FILES)
 	$(call COMPILE,$<,$@)
 
 .PHONY: clean
 clean:
-	rm -f *.o
-	rm -f *.so
-	rm -f *.dll
-	rm -f *.exe
-	rm -f r11f
+	rm -rf build
