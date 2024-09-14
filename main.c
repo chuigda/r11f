@@ -68,7 +68,6 @@ void drill_main(void) {
     vm.current_frame = NULL;
 
     int32_t output;
-    fprintf(stderr, "r11f_vm_invoke(&vm, \"com/example/Add\", \"add\", \"(II)I\", 2, (uint32_t[]){114, 514}, &output)\n");
     r11f_error_t err = r11f_vm_invoke_static(
         &vm,
         "com/example/Add",
@@ -84,33 +83,6 @@ void drill_main(void) {
         assert(0 && "failed to invoke method");
     }
 
-    fprintf(stderr, "output: %d\n", output);
-
-    r11f_memstat_t stat = r11f_memstat_get();
-    fprintf(
-        stderr,
-        "heap_mem_used: %zu\n"
-        "alloc_count: %zu\n"
-        "dealloc_count: %zu\n"
-        "fail_count: %zu\n",
-        stat.heap_mem_used,
-        stat.alloc_count,
-        stat.dealloc_count,
-        stat.fail_count
-    );
-
+    fprintf(stderr, "r11f_vm_invoke(&vm, \"com/example/Add\", \"add\", \"(II)I\", 2, (uint32_t[]){114, 514}, &output) = %d\n", output);
     r11f_classmgr_free(vm.classmgr);
-
-    stat = r11f_memstat_get();
-    fprintf(
-        stderr,
-        "heap_mem_used: %zu\n"
-        "alloc_count: %zu\n"
-        "dealloc_count: %zu\n"
-        "fail_count: %zu\n",
-        stat.heap_mem_used,
-        stat.alloc_count,
-        stat.dealloc_count,
-        stat.fail_count
-    );
 }
