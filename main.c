@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "alloc.h"
 #include "clsfile.h"
 #include "class.h"
 #include "cfdump.h"
