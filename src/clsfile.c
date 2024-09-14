@@ -3,6 +3,7 @@
 #include <error.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include "alloc.h"
 #include "class.h"
 #include "class/cpool.h"
 #include "class/attrib.h"
@@ -147,7 +148,7 @@ read_constant_pool(FILE *file, r11f_class_t *clazz) {
         }
 
         if (size) {
-            CHKFALSE_RET(clazz->constant_pool[i] = malloc(size),
+            CHKFALSE_RET(clazz->constant_pool[i] = r11f_alloc(size),
                          R11F_ERR_out_of_memory)
             ((r11f_cpinfo_t*)clazz->constant_pool[i])->tag = tag;
         }
@@ -229,7 +230,7 @@ read_constant_pool(FILE *file, r11f_class_t *clazz) {
                 uint16_t length;
                 CHKREAD(read_u2, file, &length)
 
-                r11f_constant_utf8_info_t *utf8_info = malloc(
+                r11f_constant_utf8_info_t *utf8_info = r11f_alloc(
                     sizeof(r11f_constant_utf8_info_t) + length
                 );
                 CHKFALSE_RET(clazz->constant_pool[i] = utf8_info,
@@ -286,7 +287,7 @@ read_classinfo(FILE *file, r11f_class_t *clazz) {
 static r11f_error_t
 read_interfaces(FILE *file, r11f_class_t *clazz) {
     CHKREAD(read_u2, file, &clazz->interfaces_count)
-    CHKFALSE_RET(clazz->interfaces = malloc(
+    CHKFALSE_RET(clazz->interfaces = r11f_alloc(
         clazz->interfaces_count * sizeof(uint16_t)
     ), R11F_ERR_out_of_memory)
 
@@ -300,12 +301,12 @@ read_interfaces(FILE *file, r11f_class_t *clazz) {
 static r11f_error_t
 read_fields(FILE *file, r11f_class_t *clazz) {
     CHKREAD(read_u2, file, &clazz->fields_count)
-    CHKFALSE_RET(clazz->fields = malloc(
+    CHKFALSE_RET(clazz->fields = r11f_alloc(
         clazz->fields_count * sizeof(r11f_field_info_t *)
     ), R11F_ERR_out_of_memory)
 
     for (uint16_t i = 0; i < clazz->fields_count; i++) {
-        r11f_field_info_t *field_info = malloc(sizeof(r11f_field_info_t));
+        r11f_field_info_t *field_info = r11f_alloc(sizeof(r11f_field_info_t));
         CHKFALSE_RET(clazz->fields[i] = field_info,
                      R11F_ERR_out_of_memory)
 
@@ -313,7 +314,7 @@ read_fields(FILE *file, r11f_class_t *clazz) {
         CHKREAD(read_u2, file, &field_info->name_index)
         CHKREAD(read_u2, file, &field_info->descriptor_index)
         CHKREAD(read_u2, file, &field_info->attributes_count)
-        CHKFALSE_RET(field_info->attributes = malloc(
+        CHKFALSE_RET(field_info->attributes = r11f_alloc(
             field_info->attributes_count * sizeof(r11f_attribute_info_t*)
         ), R11F_ERR_out_of_memory)
 
@@ -331,12 +332,12 @@ read_fields(FILE *file, r11f_class_t *clazz) {
 static r11f_error_t
 read_methods(FILE *file, r11f_class_t *clazz) {
     CHKREAD(read_u2, file, &clazz->methods_count)
-    CHKFALSE_RET(clazz->methods = malloc(
+    CHKFALSE_RET(clazz->methods = r11f_alloc(
         clazz->methods_count * sizeof(r11f_method_info_t *)
     ), R11F_ERR_out_of_memory)
 
     for (uint16_t i = 0; i < clazz->methods_count; i++) {
-        r11f_method_info_t *method_info = malloc(sizeof(r11f_method_info_t));
+        r11f_method_info_t *method_info = r11f_alloc(sizeof(r11f_method_info_t));
         CHKFALSE_RET(clazz->methods[i] = method_info,
                      R11F_ERR_out_of_memory)
 
@@ -344,7 +345,7 @@ read_methods(FILE *file, r11f_class_t *clazz) {
         CHKREAD(read_u2, file, &method_info->name_index)
         CHKREAD(read_u2, file, &method_info->descriptor_index)
         CHKREAD(read_u2, file, &method_info->attributes_count)
-        CHKFALSE_RET(method_info->attributes = malloc(
+        CHKFALSE_RET(method_info->attributes = r11f_alloc(
             method_info->attributes_count * sizeof(r11f_attribute_info_t*)
         ), R11F_ERR_out_of_memory)
 
@@ -362,7 +363,7 @@ read_methods(FILE *file, r11f_class_t *clazz) {
 static r11f_error_t
 read_attributes(FILE *file, r11f_class_t *clazz) {
     CHKREAD(read_u2, file, &clazz->attributes_count)
-    CHKFALSE_RET(clazz->attributes = malloc(
+    CHKFALSE_RET(clazz->attributes = r11f_alloc(
         clazz->attributes_count * sizeof(r11f_attribute_info_t*)
     ), R11F_ERR_out_of_memory)
 
@@ -393,7 +394,7 @@ static r11f_error_t imp_read_attributes(FILE *file,
         uint32_t attribute_length;
         CHKREAD(read_u4, file, &attribute_length)
 
-        r11f_attribute_info_t *attribute_info = malloc(
+        r11f_attribute_info_t *attribute_info = r11f_alloc(
             sizeof(r11f_attribute_info_t) + attribute_length
         );
         CHKFALSE_RET(attributes[i] = attribute_info,

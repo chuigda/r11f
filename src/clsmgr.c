@@ -3,6 +3,7 @@
 #include <error.h>
 #include <stdlib.h>
 #include <string.h>
+#include "alloc.h"
 #include "class.h"
 #include "class/cpool.h"
 #include "defs.h"
@@ -71,15 +72,15 @@ R11F_EXPORT r11f_error_t r11f_classmgr_add_class(r11f_classmgr_t *mgr,
     hashtable_node_t *new_name_node = NULL;
     hashtable_node_t *new_id_node = NULL;
     if (name_table_root_node->class) {
-        new_name_node = malloc(sizeof(hashtable_node_t));
+        new_name_node = r11f_alloc(sizeof(hashtable_node_t));
         if (!new_name_node) {
             return R11F_ERR_out_of_memory;
         }
     }
     if (id_table_root_node->class) {
-        new_id_node = malloc(sizeof(hashtable_node_t));
+        new_id_node = r11f_alloc(sizeof(hashtable_node_t));
         if (!new_id_node) {
-            free(new_name_node);
+            r11f_free(new_name_node);
             return R11F_ERR_out_of_memory;
         }
     }
@@ -143,7 +144,7 @@ R11F_EXPORT void r11f_classmgr_free(r11f_classmgr_t *mgr) {
         hashtable_node_t *node = &mgr->hash_table_name[i];
         if (node->class) {
             r11f_class_cleanup(node->class);
-            free(node->class);
+            r11f_free(node->class);
         }
 
         node = node->next;
@@ -151,9 +152,9 @@ R11F_EXPORT void r11f_classmgr_free(r11f_classmgr_t *mgr) {
             hashtable_node_t *next = node->next;
             if (node->class) {
                 r11f_class_cleanup(node->class);
-                free(node->class);
+                r11f_free(node->class);
             }
-            free(node);
+            r11f_free(node);
             node = next;
         }
     }
@@ -162,12 +163,12 @@ R11F_EXPORT void r11f_classmgr_free(r11f_classmgr_t *mgr) {
         hashtable_node_t *node = mgr->hash_table_id[i].next;
         while (node) {
             hashtable_node_t *next = node->next;
-            free(node);
+            r11f_free(node);
             node = next;
         }
     }
 
-    free(mgr);
+    r11f_free(mgr);
 }
 
 static size_t bkdr_hash(char const *str) {
