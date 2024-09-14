@@ -10,4 +10,6 @@ public class Add2 {
     }
 
     private static native long native_add(long a, long b);
+
+    private static native String native_add_string(String a, String b);
 }
