@@ -6,20 +6,11 @@
 #include "byteutil.h"
 #include "class.h"
 #include "class/attrib.h"
-#include "class/cpool.h"
 
 R11F_EXPORT r11f_frame_t*
 r11f_frame_alloc(r11f_class_t *clazz, r11f_method_info_t *method_info) {
-    r11f_attribute_info_t *code_info = NULL;
-    for (uint16_t i = 0; i < method_info->attributes_count; i++) {
-        r11f_attribute_info_t *attr = method_info->attributes[i];
-        r11f_constant_utf8_info_t *name_info =
-            clazz->constant_pool[attr->attribute_name_index];
-        if (!strncmp("Code", (char*)name_info->bytes, name_info->length)) {
-            code_info = attr;
-            break;
-        }
-    }
+    r11f_attribute_info_t *code_info =
+        r11f_method_find_attribute(clazz, method_info, "Code");
     assert(code_info && "attribute Code not found in method"
                         ", is this method abstract or native?");
 

@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "class/attrib.h"
 #include "class/cpool.h"
 
 R11F_EXPORT void r11f_class_cleanup(r11f_class_t *clazz) {
@@ -72,6 +73,24 @@ r11f_class_resolve_method(r11f_class_t *clazz,
             desc_info->length == descriptor_len &&
             !strncmp((char*)desc_info->bytes, descriptor, descriptor_len)) {
             return method_info;
+        }
+    }
+
+    return NULL;
+}
+
+R11F_EXPORT r11f_attribute_info_t*
+r11f_method_find_attribute(r11f_class_t *clazz,
+                           r11f_method_info_t *method_info,
+                           char const *name) {
+    for (uint16_t i = 0; i < method_info->attributes_count; i++) {
+        r11f_attribute_info_t *attr_info = method_info->attributes[i];
+        r11f_constant_utf8_info_t *attr_name_info =
+            clazz->constant_pool[attr_info->attribute_name_index];
+
+        if (attr_name_info->length == strlen(name) &&
+            !strncmp((char*)attr_name_info->bytes, name, strlen(name))) {
+            return attr_info;
         }
     }
 

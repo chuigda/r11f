@@ -1,6 +1,7 @@
 #include "vm.h"
 
 #include <error.h>
+#include <stdio.h>
 #include <string.h>
 #include "bytecode.h"
 #include "class.h"

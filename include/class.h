@@ -72,6 +72,11 @@ r11f_class_resolve_method(r11f_class_t *clazz,
                           char const *descriptor,
                           uint16_t descriptor_len);
 
+R11F_EXPORT r11f_attribute_info_t*
+r11f_method_find_attribute(r11f_class_t *clazz,
+                           r11f_method_info_t *method_info,
+                           char const *name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
