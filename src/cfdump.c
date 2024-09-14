@@ -8,7 +8,6 @@
 #include "class/cpool.h"
 #include "defs.h"
 
-static void dump_constant_pool_item(FILE *fp, void *cpinfo);
 static void
 dump_access_flags(FILE *fp, char const* prefix, uint16_t access_flags);
 static void dump_class_info(FILE *fp,
@@ -40,10 +39,6 @@ r11f_class_dump(FILE *fp, char const* filename, r11f_class_t *clazz) {
         "  cf->constant_pool_count: %d\n",
         clazz->constant_pool_count
     );
-    for (uint16_t i = 1; i < clazz->constant_pool_count; i++) {
-        fprintf(fp, "    [%d] ", i);
-        dump_constant_pool_item(fp, clazz->constant_pool[i]);
-    }
 
     dump_access_flags(fp, "  cf->access_flags: ", clazz->access_flags);
 
@@ -202,11 +197,6 @@ R11F_EXPORT void r11f_dump_constant_pool_item(FILE *fp, void *cpinfo) {
             break;
         }
     }
-}
-
-static void dump_constant_pool_item(FILE *fp, void *cpinfo) {
-    r11f_dump_constant_pool_item(fp, cpinfo);
-    fputc('\n', fp);
 }
 
 static void
