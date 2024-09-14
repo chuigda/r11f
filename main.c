@@ -59,9 +59,12 @@ int main(int argc, char *argv[]) {
 }
 
 void drill_main(void) {
-    r11f_classmgr_t *mgr = r11f_classmgr_alloc();
     r11f_vm_t vm;
-    vm.classmgr = mgr;
+    vm.classpath = (char const*[]){
+        "test",
+        NULL
+    };
+    vm.classmgr = r11f_classmgr_alloc();;
     vm.current_frame = NULL;
 
     int32_t output;
@@ -96,7 +99,7 @@ void drill_main(void) {
         stat.fail_count
     );
 
-    r11f_classmgr_free(mgr);
+    r11f_classmgr_free(vm.classmgr);
 
     stat = r11f_memstat_get();
     fprintf(

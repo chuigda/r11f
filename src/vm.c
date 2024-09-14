@@ -20,7 +20,7 @@ static void invoke_copyargs(r11f_frame_t *src,
                             char const* descriptor);
 static r11f_error_t vm_get_class(r11f_vm_t *vm,
                                  char const *class_name,
-                                 size_t class_name_len,
+                                 uint16_t class_name_len,
                                  r11f_class_t **output);
 static void get_class_name(r11f_class_t *class,
                            r11f_constant_methodref_info_t *methodref_info,
@@ -161,9 +161,9 @@ static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm) {
     }
 
     r11f_method_qual_name_t method_qual_name =
-        r11f_class_get_method_name(clazz, methodref_info);
+        r11f_class_get_method_name(vm->current_frame->clazz, methodref_info);
     r11f_method_info_t *method_info =
-        r11f_class_resolve_method(clazz,
+        r11f_class_resolve_method(vm->current_frame->clazz,
                                   method_qual_name.name,
                                   method_qual_name.name_len,
                                   method_qual_name.descriptor,
@@ -185,11 +185,12 @@ static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm) {
         return R11F_ERR_cannot_invoke_non_static_method;
     }
 
-    r11f_frame_t *frame = r11f_frame_alloc(clazz, method_info);
+    r11f_frame_t *frame = r11f_frame_alloc(vm->current_frame->clazz, method_info);
     if (!frame) {
         return R11F_ERR_out_of_memory;
     }
 
+    frame->clazz = clazz;
     invoke_copyargs(vm->current_frame,
                     frame,
                     method_qual_name.descriptor);
@@ -260,7 +261,7 @@ static void invoke_copyargs(r11f_frame_t *src,
 
 static r11f_error_t vm_get_class(r11f_vm_t *vm,
                                  char const *class_name,
-                                 size_t class_name_len,
+                                 uint16_t class_name_len,
                                  r11f_class_t **output) {
     r11f_class_t *clazz = r11f_classmgr_find_class(vm->classmgr, class_name);
     if (clazz) {
@@ -268,40 +269,51 @@ static r11f_error_t vm_get_class(r11f_vm_t *vm,
         return R11F_success;
     }
 
-    char file_name[class_name_len + 7];
-    strncpy(file_name, class_name, class_name_len);
-    file_name[class_name_len] = '\0';
-    strcat(file_name, ".class");
+    char const* const* classpath = vm->classpath;
+    while (*classpath) {
+        size_t classpath_len = strlen(*classpath);
 
-    FILE *fp = fopen(file_name, "rb");
-    if (!fp) {
-        return R11F_ERR_class_not_found;
-    }
+        // file_name = classpath + '/' + class_name + ".class"
+        char file_name[classpath_len + 1 + class_name_len + 7];
+        strcpy(file_name, *classpath);
+        strcat(file_name, "/");
+        strncat(file_name, class_name, class_name_len + 1);
+        strcat(file_name, ".class");
 
-    r11f_class_t *class = r11f_alloc(sizeof(r11f_class_t));
-    if (!class) {
+        fprintf(stderr, "loading class file %s\n", file_name);
+
+        FILE *fp = fopen(file_name, "rb");
+        if (!fp) {
+            continue;
+        }
+
+        r11f_class_t *class = r11f_alloc(sizeof(r11f_class_t));
+        if (!class) {
+            fclose(fp);
+            return R11F_ERR_out_of_memory;
+        }
+
+        r11f_error_t err = r11f_classfile_read(fp, class);
         fclose(fp);
-        return R11F_ERR_out_of_memory;
+        if (err != R11F_success) {
+            r11f_free(class);
+            return err;
+        }
+
+        uint32_t classid;
+        err = r11f_classmgr_add_class(vm->classmgr, class, &classid);
+        if (err != R11F_success) {
+            r11f_class_cleanup(class);
+            r11f_free(class);
+            return err;
+        }
+
+        // TODO: if there's a static initializer, invoke it
+        *output = class;
+        return R11F_success;
     }
 
-    r11f_error_t err = r11f_classfile_read(fp, class);
-    fclose(fp);
-    if (err != R11F_success) {
-        r11f_free(class);
-        return err;
-    }
-
-    uint32_t classid;
-    err = r11f_classmgr_add_class(vm->classmgr, class, &classid);
-    if (err != R11F_success) {
-        r11f_class_cleanup(class);
-        r11f_free(class);
-        return err;
-    }
-
-    // TODO: if there's a static initializer, invoke it
-    *output = class;
-    return R11F_success;
+    return R11F_ERR_class_not_found;
 }
 
 static void get_class_name(r11f_class_t *clazz,

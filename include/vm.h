@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 typedef struct {
+    char const* const* classpath;
     r11f_classmgr_t *classmgr;
     r11f_frame_t *current_frame;
 } r11f_vm_t;
