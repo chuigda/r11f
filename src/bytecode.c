@@ -7,6 +7,7 @@
 #include "cfdump.h"
 #include "class.h"
 #include "class/attrib.h"
+#include "class/cpool.h"
 #include "forward.h"
 
 static char const *g_indent_str = "                                        ";
@@ -114,7 +115,7 @@ R11F_EXPORT void r11f_disassemble(r11f_class_t *clazz,
             }
 
             case R11F_ldc: {
-                uint8_t index = code[index + 1];
+                uint8_t index = code[idx + 1];
                 printf("%s #%d ", bytecode_str, index);
                 r11f_dump_constant_pool_item(
                     stdout,
@@ -168,11 +169,7 @@ R11F_EXPORT void r11f_disassemble(r11f_class_t *clazz,
             case R11F_ldc2_w:
             case R11F_checkcast:
             case R11F_getfield:
-            case R11F_getstatic:
-            case R11F_putfield:
-            case R11F_putstatic:
-            case R11F_invokespecial:
-            case R11F_invokestatic: {
+            case R11F_putfield: {
                 uint8_t byte1 = code[idx + 1];
                 uint8_t byte2 = code[idx + 2];
                 uint16_t index = ((uint16_t)byte1 << 8) | byte2;
@@ -182,6 +179,71 @@ R11F_EXPORT void r11f_disassemble(r11f_class_t *clazz,
                     clazz->constant_pool[index]
                 );
                 putchar('\n');
+                idx += 3;
+                break;
+            }
+
+            case R11F_getstatic:
+            case R11F_putstatic: {
+                uint8_t byte1 = code[idx + 1];
+                uint8_t byte2 = code[idx + 2];
+                uint16_t index = ((uint16_t)byte1 << 8) | byte2;
+                printf("%s #%d ", bytecode_str, index);
+
+                r11f_constant_fieldref_info_t *fieldref_info =
+                    clazz->constant_pool[index];
+                r11f_constant_class_info_t *class_info =
+                    clazz->constant_pool[fieldref_info->class_index];
+                r11f_constant_utf8_info_t *class_name_info =
+                    clazz->constant_pool[class_info->name_index];
+                r11f_constant_name_and_type_info_t *name_and_type_info =
+                    clazz->constant_pool[fieldref_info->name_and_type_index];
+                r11f_constant_utf8_info_t *name_info =
+                    clazz->constant_pool[name_and_type_info->name_index];
+
+                printf(
+                    "%.*s.%.*s \n",
+                    class_name_info->length,
+                    class_name_info->bytes,
+                    name_info->length,
+                    name_info->bytes
+                );
+                idx += 3;
+                break;
+            }
+
+            case R11F_invokespecial:
+            case R11F_invokestatic:
+            case R11F_invokevirtual: {
+                uint8_t byte1 = code[idx + 1];
+                uint8_t byte2 = code[idx + 2];
+                uint16_t index = ((uint16_t)byte1 << 8) | byte2;
+
+                r11f_constant_methodref_info_t *methodref_info =
+                    clazz->constant_pool[index];
+                r11f_constant_class_info_t *class_info =
+                    clazz->constant_pool[methodref_info->class_index];
+                r11f_constant_name_and_type_info_t *name_and_type_info =
+                    clazz->constant_pool[methodref_info->name_and_type_index];
+
+                r11f_constant_utf8_info_t *class_name_info =
+                    clazz->constant_pool[class_info->name_index];
+                r11f_constant_utf8_info_t *name_info =
+                    clazz->constant_pool[name_and_type_info->name_index];
+                r11f_constant_utf8_info_t *type_info =
+                    clazz->constant_pool[name_and_type_info->descriptor_index];
+
+                printf(
+                    "%s #%d %.*s.%.*s%.*s\n",
+                    bytecode_str,
+                    index,
+                    class_name_info->length,
+                    class_name_info->bytes,
+                    name_info->length,
+                    name_info->bytes,
+                    type_info->length,
+                    type_info->bytes
+                );
                 idx += 3;
                 break;
             }
@@ -327,7 +389,7 @@ R11F_EXPORT void r11f_disassemble(r11f_class_t *clazz,
                         (int)indent + 2,
                         g_indent_str,
                         key,
-                        (int)(idx + offset)
+                        (int)(offset + 1)
                     );
 
                     idx += 8;
@@ -380,7 +442,7 @@ R11F_EXPORT void r11f_disassemble(r11f_class_t *clazz,
                     "%.*sdefault: %d\n",
                     (int)indent + 2,
                     g_indent_str,
-                    (int)(idx + default_offset)
+                    (int)(default_offset + 1)
                 );
                 printf(
                     "%.*slow: %d\n",
@@ -413,12 +475,10 @@ R11F_EXPORT void r11f_disassemble(r11f_class_t *clazz,
                         (int)indent + 2,
                         g_indent_str,
                         i,
-                        (int)(idx + offset)
+                        (int)(offset + 1)
                     );
-
                     idx += 4;
                 }
-
                 break;
             }
 
