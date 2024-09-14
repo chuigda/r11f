@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include "bytecode.h"
 #include "class.h"
 #include "class/attrib.h"
 #include "class/cpool.h"
@@ -305,12 +306,16 @@ static void dump_method_info(FILE *fp,
         "      method_info->attributes_count: %d\n",
         method_info->attributes_count
     );
+
     for (uint16_t i = 0; i < method_info->attributes_count; i++) {
         r11f_attribute_info_t *attribute_info = method_info->attributes[i];
         fprintf(fp, "        [%d] ", i);
         dump_attribute_name(fp, clazz, attribute_info);
         dump_attribute_info(fp, "            ", attribute_info);
     }
+
+    fprintf(fp, "      method_info->attribute_code:\n");
+    r11f_disassemble(clazz, method_info, 8);
 }
 
 static void dump_attribute_name(FILE *fp,
