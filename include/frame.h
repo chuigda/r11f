@@ -18,7 +18,6 @@ typedef union u_r11f_stack_value {
     int64_t i64;
     float f32;
     double f64;
-    void *ptr;
 
     uint32_t u32;
     struct {

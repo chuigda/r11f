@@ -112,7 +112,7 @@ R11F_EXPORT r11f_error_t r11f_classmgr_add_class(r11f_classmgr_t *mgr,
 }
 
 R11F_EXPORT r11f_class_t *r11f_classmgr_find_class(r11f_classmgr_t *mgr,
-                                                       char const *name) {
+                                                   char const *name) {
     size_t hash = bkdr_hash(name) % mgr->hash_size;
     hashtable_node_t *node = &mgr->hash_table_name[hash];
     for (; node; node = node->next) {
@@ -126,11 +126,27 @@ R11F_EXPORT r11f_class_t *r11f_classmgr_find_class(r11f_classmgr_t *mgr,
 }
 
 R11F_EXPORT r11f_class_t *r11f_classmgr_find_class_id(r11f_classmgr_t *mgr,
-                                                          uint32_t classid) {
+                                                      uint32_t classid) {
     size_t hash = classid % mgr->hash_size;
     hashtable_node_t *node = &mgr->hash_table_id[hash];
     for (; node; node = node->next) {
         if (node->class && node->classid == classid) {
+            return node->class;
+        }
+    }
+
+    return NULL;
+}
+
+R11F_EXPORT r11f_class_t *r11f_classmgr_find_class2(r11f_classmgr_t *mgr,
+                                                    char const *name,
+                                                    uint16_t name_len) {
+    size_t hash = bkdr_hash2(name, name_len) % mgr->hash_size;
+    hashtable_node_t *node = &mgr->hash_table_name[hash];
+    for (; node; node = node->next) {
+        if (node->class &&
+            node->class_name_len == name_len &&
+            !strncmp(node->class_name, name, name_len)) {
             return node->class;
         }
     }

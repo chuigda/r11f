@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "alloc.h"
 #include "byteutil.h"
 #include "class.h"
 #include "class/attrib.h"
@@ -21,7 +22,7 @@ r11f_frame_alloc(r11f_class_t *clazz, r11f_method_info_t *method_info) {
 
     size_t qword_count = max_stack + (max_locals + 1) / 2;
 
-    r11f_frame_t *frame = malloc(sizeof(r11f_frame_t) + 8 * qword_count);
+    r11f_frame_t *frame = r11f_alloc(sizeof(r11f_frame_t) + 8 * qword_count);
     if (!frame) {
         return NULL;
     }
@@ -37,7 +38,7 @@ r11f_frame_alloc(r11f_class_t *clazz, r11f_method_info_t *method_info) {
     frame->sp = 0;
 
     frame->stack = (r11f_stack_value_t*)(frame->data);
-    frame->locals = (uint32_t*)(frame->data + 8 * max_stack);
+    frame->locals = (uint32_t*)(frame->data + max_stack);
 
     return frame;
 }

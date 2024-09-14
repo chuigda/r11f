@@ -39,8 +39,6 @@ r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
     r11f_error_t err =
         vm_get_class(vm, class_name, strlen(class_name), &clazz);
     if (err != R11F_success) {
-        fprintf(stderr, "error getting class %s: %s\n",
-                class_name, r11f_explain_error(err));
         return err;
     }
 
@@ -89,19 +87,20 @@ static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
         uint8_t insc = frame->code[frame->pc];
         switch (insc) {
             case R11F_iload_0:
-                stack[frame->sp + 1].i32 = *(int32_t*)(locals + 0);
+                stack[frame->sp].i32 = *(int32_t*)(locals + 0);
                 frame->sp++;
                 frame->pc += 1;
                 break;
             case R11F_iload_1:
-                stack[frame->sp + 1].i32 = *(int32_t*)(locals + 1);
+                stack[frame->sp].i32 = *(int32_t*)(locals + 1);
                 frame->sp++;
                 frame->pc += 1;
                 break;
             case R11F_iadd: {
-                int32_t a = stack[frame->sp].i32;
-                int32_t b = stack[frame->sp - 1].i32;
-                stack[frame->sp - 1].i32 = a + b;
+                int32_t a = stack[frame->sp - 1].i32;
+                int32_t b = stack[frame->sp - 2].i32;
+
+                stack[frame->sp - 2].i32 = a + b;
                 frame->sp--;
                 frame->pc++;
                 break;
@@ -110,11 +109,11 @@ static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
                 vm->current_frame = frame->parent;
                 if (vm->current_frame) {
                     vm->current_frame->stack[vm->current_frame->sp].i32
-                        = stack[frame->sp].i32;
+                        = stack[frame->sp - 1].i32;
                     vm->current_frame->sp++;
                 }
                 else {
-                    *(int32_t*)output = stack[frame->sp].i32;
+                    *(int32_t*)output = stack[frame->sp - 1].i32;
                 }
                 r11f_free(frame);
                 break;
@@ -163,7 +162,7 @@ static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm) {
     r11f_method_qual_name_t method_qual_name =
         r11f_class_get_method_name(vm->current_frame->clazz, methodref_info);
     r11f_method_info_t *method_info =
-        r11f_class_resolve_method(vm->current_frame->clazz,
+        r11f_class_resolve_method(clazz,
                                   method_qual_name.name,
                                   method_qual_name.name_len,
                                   method_qual_name.descriptor,
@@ -185,16 +184,16 @@ static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm) {
         return R11F_ERR_cannot_invoke_non_static_method;
     }
 
-    r11f_frame_t *frame = r11f_frame_alloc(vm->current_frame->clazz, method_info);
+    r11f_frame_t *frame = r11f_frame_alloc(clazz, method_info);
     if (!frame) {
         return R11F_ERR_out_of_memory;
     }
 
-    frame->clazz = clazz;
     invoke_copyargs(vm->current_frame,
                     frame,
                     method_qual_name.descriptor);
-
+    frame->parent = vm->current_frame;
+    vm->current_frame = frame;
     return R11F_success;
 }
 
@@ -208,6 +207,7 @@ static void invoke_copyargs(r11f_frame_t *src,
 
     descriptor += 1;
     while (*descriptor != ')') {
+        assert(dst_idx < dst->max_locals);
         switch (*descriptor) {
             case 'B':
             case 'C':
@@ -256,6 +256,8 @@ static void invoke_copyargs(r11f_frame_t *src,
                 assert(0 && "unknown type");
             }
         }
+
+        descriptor += 1;
     }
 }
 
@@ -263,7 +265,9 @@ static r11f_error_t vm_get_class(r11f_vm_t *vm,
                                  char const *class_name,
                                  uint16_t class_name_len,
                                  r11f_class_t **output) {
-    r11f_class_t *clazz = r11f_classmgr_find_class(vm->classmgr, class_name);
+    r11f_class_t *clazz = r11f_classmgr_find_class2(vm->classmgr,
+                                                    class_name,
+                                                    class_name_len);
     if (clazz) {
         *output = clazz;
         return R11F_success;
@@ -277,10 +281,8 @@ static r11f_error_t vm_get_class(r11f_vm_t *vm,
         char file_name[classpath_len + 1 + class_name_len + 7];
         strcpy(file_name, *classpath);
         strcat(file_name, "/");
-        strncat(file_name, class_name, class_name_len + 1);
+        strncat(file_name, class_name, class_name_len);
         strcat(file_name, ".class");
-
-        fprintf(stderr, "loading class file %s\n", file_name);
 
         FILE *fp = fopen(file_name, "rb");
         if (!fp) {
