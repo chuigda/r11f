@@ -27,7 +27,7 @@ R11F_EXPORT void r11f_memstat_clear(void) {
     atomic_store(&g_fail_count, 0);
 }
 
-R11F_INTERNAL void* r11f_alloc(size_t size) {
+R11F_EXPORT void* r11f_alloc(size_t size) {
     void *ret = malloc(size + sizeof(size_t));
     *(size_t*)ret = size;
 
@@ -42,8 +42,10 @@ R11F_INTERNAL void* r11f_alloc(size_t size) {
     return (uint8_t*)ret + sizeof(size_t);
 }
 
-R11F_INTERNAL void* r11f_alloc_zeroed(size_t size) {
+R11F_EXPORT void* r11f_alloc_zeroed(size_t size) {
     void *ret = calloc(1, size + sizeof(size_t));
+    *(size_t*)ret = size;
+
     if (ret) {
         atomic_fetch_add(&g_heap_mem_used, size);
         atomic_fetch_add(&g_alloc_count, 1);
@@ -51,10 +53,11 @@ R11F_INTERNAL void* r11f_alloc_zeroed(size_t size) {
     else {
         atomic_fetch_add(&g_fail_count, 1);
     }
-    return ret;
+
+    return (uint8_t*)ret + sizeof(size_t);
 }
 
-R11F_INTERNAL void r11f_free(void *ptr) {
+R11F_EXPORT void r11f_free(void *ptr) {
     if (ptr) {
         size_t size = *((size_t*)((uint8_t*)ptr - sizeof(size_t)));
         atomic_fetch_sub(&g_heap_mem_used, size);

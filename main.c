@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bytecode.h"
+#include "alloc.h"
 #include "clsfile.h"
 #include "class.h"
 #include "cfdump.h"
@@ -66,7 +66,7 @@ void drill_main(void) {
     FILE *file = fopen("test/Add.class", "rb");
     assert(file && "failed to open file");
 
-    r11f_class_t *classfile = calloc(1, sizeof(r11f_class_t));
+    r11f_class_t *classfile = r11f_alloc_zeroed(sizeof(r11f_class_t));
     assert(classfile && "failed to allocate classfile");
 
     r11f_error_t err = r11f_classfile_read(file, classfile);
@@ -94,5 +94,31 @@ void drill_main(void) {
         assert(0 && "failed to invoke method");
     }
 
+    r11f_memstat_t stat = r11f_memstat_get();
+    fprintf(
+        stderr,
+        "heap_mem_used: %zu\n"
+        "alloc_count: %zu\n"
+        "dealloc_count: %zu\n"
+        "fail_count: %zu\n",
+        stat.heap_mem_used,
+        stat.alloc_count,
+        stat.dealloc_count,
+        stat.fail_count
+    );
+
     r11f_classmgr_free(mgr);
+
+    stat = r11f_memstat_get();
+    fprintf(
+        stderr,
+        "heap_mem_used: %zu\n"
+        "alloc_count: %zu\n"
+        "dealloc_count: %zu\n"
+        "fail_count: %zu\n",
+        stat.heap_mem_used,
+        stat.alloc_count,
+        stat.dealloc_count,
+        stat.fail_count
+    );
 }

@@ -36,8 +36,7 @@ R11F_EXPORT r11f_classmgr_t *r11f_classmgr_alloc(void) {
 }
 
 R11F_EXPORT r11f_classmgr_t *r11f_classmgr_alloc_hash_size(size_t hash_size) {
-    r11f_classmgr_t *mgr = calloc(
-        1,
+    r11f_classmgr_t *mgr = r11f_alloc_zeroed(
         sizeof(r11f_classmgr_t) + 2 * hash_size * sizeof(hashtable_node_t)
     );
     if (!mgr) {

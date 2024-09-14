@@ -89,9 +89,8 @@ static r11f_error_t read_header(FILE *file, r11f_class_t *clazz) {
 static r11f_error_t
 read_constant_pool(FILE *file, r11f_class_t *clazz) {
     CHKREAD(read_u2, file, &clazz->constant_pool_count)
-    CHKFALSE_RET(clazz->constant_pool = calloc(
-        clazz->constant_pool_count,
-        sizeof(r11f_cpinfo_t *)
+    CHKFALSE_RET(clazz->constant_pool = r11f_alloc_zeroed(
+        clazz->constant_pool_count * sizeof(void*)
     ), R11F_ERR_out_of_memory)
 
     for (uint16_t i = 1; i < clazz->constant_pool_count; i++) {
