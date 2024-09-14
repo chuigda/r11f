@@ -14,7 +14,10 @@
 #include "frame.h"
 
 static r11f_error_t vm_execute(r11f_vm_t *vm, void *output);
-static r11f_error_t vm_invokestatic(r11f_vm_t *vm);
+static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm);
+static void invoke_copyargs(r11f_frame_t *src,
+                            r11f_frame_t *dst,
+                            char const* descriptor);
 static r11f_error_t vm_get_class(r11f_vm_t *vm,
                                  char const *class_name,
                                  size_t class_name_len,
@@ -32,9 +35,13 @@ r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
                             uint16_t argc,
                             uint32_t argv[],
                             void *output) {
-    r11f_class_t *clazz = r11f_classmgr_find_class(vm->classmgr, class_name);
-    if (!clazz) {
-        return R11F_ERR_class_not_found;
+    r11f_class_t *clazz;
+    r11f_error_t err =
+        vm_get_class(vm, class_name, strlen(class_name), &clazz);
+    if (err != R11F_success) {
+        fprintf(stderr, "error getting class %s: %s\n",
+                class_name, r11f_explain_error(err));
+        return err;
     }
 
     r11f_method_info_t *method_info = r11f_class_resolve_method(
@@ -113,7 +120,7 @@ static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
                 break;
             }
             case R11F_invokestatic: {
-                r11f_error_t err = vm_invokestatic(vm);
+                r11f_error_t err = vm_exec_invokestatic(vm);
                 if (err != R11F_success) {
                     return err;
                 }
@@ -129,7 +136,7 @@ static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
     return R11F_success;
 }
 
-static r11f_error_t vm_invokestatic(r11f_vm_t *vm) {
+static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm) {
     assert(vm->current_frame->code[vm->current_frame->pc] == R11F_invokestatic);
 
     uint16_t methodref_index =
@@ -153,13 +160,15 @@ static r11f_error_t vm_invokestatic(r11f_vm_t *vm) {
         return err;
     }
 
-    r11f_method_info_t *method_info = r11f_class_resolve_method(
-        clazz,
-        class_name,
-        class_name_len,
-        class_name,
-        class_name_len
-    );
+    r11f_method_qual_name_t method_qual_name =
+        r11f_class_get_method_name(clazz, methodref_info);
+    r11f_method_info_t *method_info =
+        r11f_class_resolve_method(clazz,
+                                  method_qual_name.name,
+                                  method_qual_name.name_len,
+                                  method_qual_name.descriptor,
+                                  method_qual_name.descriptor_len);
+
     if (!method_info) {
         return R11F_ERR_method_not_found;
     }
@@ -181,7 +190,72 @@ static r11f_error_t vm_invokestatic(r11f_vm_t *vm) {
         return R11F_ERR_out_of_memory;
     }
 
+    invoke_copyargs(vm->current_frame,
+                    frame,
+                    method_qual_name.descriptor);
+
     return R11F_success;
+}
+
+static void invoke_copyargs(r11f_frame_t *src,
+                            r11f_frame_t *dst,
+                            char const* descriptor) {
+    assert(*descriptor == '(');
+
+    uint16_t src_idx = 0;
+    uint16_t dst_idx = 0;
+
+    descriptor += 1;
+    while (*descriptor != ')') {
+        switch (*descriptor) {
+            case 'B':
+            case 'C':
+            case 'F':
+            case 'I':
+            case 'S':
+            case 'Z': {
+                dst->locals[dst_idx] = src->stack[src_idx].u32;
+                src_idx++;
+                dst_idx++;
+                break;
+            }
+            case 'D':
+            case 'J': {
+                dst->locals[dst_idx] = src->stack[src_idx].u32_2.byte1;
+                dst->locals[dst_idx + 1] = src->stack[src_idx].u32_2.byte2;
+                src_idx++;
+                dst_idx += 2;
+                break;
+            }
+            case 'L': {
+                while (*descriptor != ';') {
+                    descriptor++;
+                }
+
+                dst->locals[dst_idx] = src->locals[src_idx];
+                src_idx++;
+                dst_idx++;
+                break;
+            }
+            case '[': {
+                while (*descriptor == '[') {
+                    descriptor++;
+                }
+                if (*descriptor == 'L') {
+                    while (*descriptor != ';') {
+                        descriptor++;
+                    }
+                }
+                dst->locals[dst_idx] = src->locals[src_idx];
+                src_idx++;
+                dst_idx++;
+                break;
+            }
+            default: {
+                assert(0 && "unknown type");
+            }
+        }
+    }
 }
 
 static r11f_error_t vm_get_class(r11f_vm_t *vm,

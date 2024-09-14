@@ -65,10 +65,10 @@ void drill_main(void) {
     vm.current_frame = NULL;
 
     int32_t output;
-    fprintf(stderr, "r11f_vm_invoke(&vm, \"tech/icey/r11f/test/Add\", \"add\", \"(II)I\", 2, (uint32_t[]){114, 514}, &output)\n");
+    fprintf(stderr, "r11f_vm_invoke(&vm, \"com/example/Add\", \"add\", \"(II)I\", 2, (uint32_t[]){114, 514}, &output)\n");
     r11f_error_t err = r11f_vm_invoke_static(
         &vm,
-        "tech/icey/r11f/test/Add",
+        "com/example/Add",
         "add",
         "(II)I",
         2,

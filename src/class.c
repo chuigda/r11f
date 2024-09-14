@@ -80,6 +80,38 @@ r11f_class_resolve_method(r11f_class_t *clazz,
     return NULL;
 }
 
+R11F_EXPORT r11f_method_qual_name_t
+r11f_class_get_method_name(r11f_class_t *clazz,
+                           r11f_constant_methodref_info_t *methodref_info) {
+    r11f_constant_name_and_type_info_t *name_and_type_info =
+        clazz->constant_pool[methodref_info->name_and_type_index];
+    r11f_constant_utf8_info_t *name_info =
+        clazz->constant_pool[name_and_type_info->name_index];
+    r11f_constant_utf8_info_t *desc_info =
+        clazz->constant_pool[name_and_type_info->descriptor_index];
+
+    return (r11f_method_qual_name_t){
+        (char const*)name_info->bytes,
+        name_info->length,
+        (char const*)desc_info->bytes,
+        desc_info->length
+    };
+}
+
+R11F_EXPORT r11f_method_info_t*
+r11f_class_resolve_method2(r11f_class_t *clazz,
+                           r11f_constant_methodref_info_t *methodref_info) {
+    r11f_method_qual_name_t qualname =
+        r11f_class_get_method_name(clazz, methodref_info);
+    return r11f_class_resolve_method(
+        clazz,
+        qualname.name,
+        qualname.name_len,
+        qualname.descriptor,
+        qualname.descriptor_len
+    );
+}
+
 R11F_EXPORT r11f_attribute_info_t*
 r11f_method_find_attribute(r11f_class_t *clazz,
                            r11f_method_info_t *method_info,

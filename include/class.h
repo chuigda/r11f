@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "class/cpool.h"
 #include "defs.h"
 #include "forward.h"
 
@@ -71,6 +72,21 @@ r11f_class_resolve_method(r11f_class_t *clazz,
                           uint16_t name_len,
                           char const *descriptor,
                           uint16_t descriptor_len);
+
+typedef struct {
+    char const* name;
+    uint16_t name_len;
+    char const *descriptor;
+    uint16_t descriptor_len;
+} r11f_method_qual_name_t;
+
+R11F_EXPORT r11f_method_qual_name_t
+r11f_class_get_method_name(r11f_class_t *clazz,
+                           r11f_constant_methodref_info_t *methodref_info);
+
+R11F_EXPORT r11f_method_info_t*
+r11f_class_resolve_method2(r11f_class_t *clazz,
+                           r11f_constant_methodref_info_t *methodref_info);
 
 R11F_EXPORT r11f_attribute_info_t*
 r11f_method_find_attribute(r11f_class_t *clazz,
