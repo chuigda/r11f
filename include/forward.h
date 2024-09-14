@@ -10,6 +10,7 @@ typedef struct st_r11f_frame r11f_frame_t;
 typedef struct st_r11f_classmgr r11f_classmgr_t;
 typedef struct st_r11f_method_info r11f_method_info_t;
 typedef struct st_r11f_attribute_info r11f_attribute_info_t;
+typedef union u_r11f_stack_value r11f_stack_value_t;
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -19,9 +19,9 @@ r11f_frame_alloc(r11f_class_t *clazz, r11f_method_info_t *method_info) {
     uint16_t code_length = read_unaligned2(code_info->info + 4);
     uint8_t *code = code_info->info + 8;
 
-    r11f_frame_t *frame = malloc(
-        sizeof(r11f_frame_t) + (max_locals + max_stack) * sizeof(uint32_t)
-    );
+    size_t qword_count = max_stack + (max_locals + 1) / 2;
+
+    r11f_frame_t *frame = malloc(sizeof(r11f_frame_t) + 8 * qword_count);
     if (!frame) {
         return NULL;
     }
@@ -35,8 +35,9 @@ r11f_frame_alloc(r11f_class_t *clazz, r11f_method_info_t *method_info) {
     frame->max_locals = max_locals;
     frame->max_stack = max_stack;
     frame->sp = 0;
-    frame->locals = frame->data;
-    frame->stack = frame->data + max_locals;
+
+    frame->stack = (r11f_stack_value_t*)(frame->data);
+    frame->locals = (uint32_t*)(frame->data + 8 * max_stack);
 
     return frame;
 }

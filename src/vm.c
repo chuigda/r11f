@@ -75,41 +75,41 @@ r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
 
 static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
     while (vm->current_frame) {
-        uint8_t insc = vm->current_frame->code[vm->current_frame->pc];
+        r11f_frame_t *frame = vm->current_frame;
+        r11f_stack_value_t *stack = frame->stack;
+        uint32_t *locals = frame->locals;
+
+        uint8_t insc = frame->code[frame->pc];
         switch (insc) {
             case R11F_iload_0:
-                vm->current_frame->stack[vm->current_frame->sp + 1] =
-                    vm->current_frame->locals[0];
-                vm->current_frame->sp++;
-                vm->current_frame->pc += 1;
+                stack[frame->sp + 1].i32 = *(int32_t*)(locals + 0);
+                frame->sp++;
+                frame->pc += 1;
                 break;
             case R11F_iload_1:
-                vm->current_frame->stack[vm->current_frame->sp + 1] =
-                    vm->current_frame->locals[1];
-                vm->current_frame->sp++;
-                vm->current_frame->pc += 1;
+                stack[frame->sp + 1].i32 = *(int32_t*)(locals + 1);
+                frame->sp++;
+                frame->pc += 1;
                 break;
             case R11F_iadd: {
-                int a = vm->current_frame->stack[vm->current_frame->sp];
-                int b = vm->current_frame->stack[vm->current_frame->sp - 1];
-                vm->current_frame->sp -= 1;
-                vm->current_frame->stack[vm->current_frame->sp] = a + b;
-                vm->current_frame->pc += 1;
+                int32_t a = stack[frame->sp].i32;
+                int32_t b = stack[frame->sp - 1].i32;
+                stack[frame->sp - 1].i32 = a + b;
+                frame->sp--;
+                frame->pc++;
                 break;
             }
             case R11F_ireturn: {
-                int32_t result = vm->current_frame->stack[vm->current_frame->sp];
-
-                vm->current_frame = vm->current_frame->parent;
-                if (!vm->current_frame) {
-                    if (output) {
-                        *(int32_t*)output = result;
-                    }
-                }
-                else {
-                    vm->current_frame->stack[vm->current_frame->sp] = result;
+                vm->current_frame = frame->parent;
+                if (vm->current_frame) {
+                    vm->current_frame->stack[vm->current_frame->sp].i32
+                        = stack[frame->sp].i32;
                     vm->current_frame->sp++;
                 }
+                else {
+                    *(int32_t*)output = stack[frame->sp].i32;
+                }
+                r11f_free(frame);
                 break;
             }
             case R11F_invokestatic: {

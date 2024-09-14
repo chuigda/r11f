@@ -11,6 +11,16 @@
 extern "C" {
 #endif
 
+typedef union u_r11f_stack_value {
+    int8_t i8;
+    int16_t i16;
+    int32_t i32;
+    int64_t i64;
+    float f32;
+    double f64;
+    void *ptr;
+} r11f_stack_value_t;
+
 struct st_r11f_frame {
     r11f_frame_t *parent;
 
@@ -25,9 +35,10 @@ struct st_r11f_frame {
     uint16_t max_stack;
     uint16_t sp;
 
+    r11f_stack_value_t *stack;
     uint32_t *locals;
-    uint32_t *stack;
-    uint32_t data[];
+
+    uint64_t data[];
 };
 
 R11F_EXPORT r11f_frame_t*
