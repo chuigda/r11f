@@ -60,28 +60,13 @@ int main(int argc, char *argv[]) {
 
 void drill_main(void) {
     r11f_classmgr_t *mgr = r11f_classmgr_alloc();
-    assert(mgr && "failed to allocate class manager");
-
-    FILE *file = fopen("test/Add.class", "rb");
-    assert(file && "failed to open file");
-
-    r11f_class_t *classfile = r11f_alloc_zeroed(sizeof(r11f_class_t));
-    assert(classfile && "failed to allocate classfile");
-
-    r11f_error_t err = r11f_classfile_read(file, classfile);
-    assert(err == R11F_success && "failed to read classfile");
-
-    fclose(file);
-
-    uint32_t classid;
-    err = r11f_classmgr_add_class(mgr, classfile, &classid);
-    assert(err == R11F_success && "failed to add class");
-
     r11f_vm_t vm;
     vm.classmgr = mgr;
+    vm.current_frame = NULL;
+
     int32_t output;
     fprintf(stderr, "r11f_vm_invoke(&vm, \"tech/icey/r11f/test/Add\", \"add\", \"(II)I\", 2, (uint32_t[]){114, 514}, &output)\n");
-    err = r11f_vm_invoke(
+    r11f_error_t err = r11f_vm_invoke_static(
         &vm,
         "tech/icey/r11f/test/Add",
         "add",

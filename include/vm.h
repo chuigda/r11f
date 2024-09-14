@@ -15,13 +15,13 @@ typedef struct {
 } r11f_vm_t;
 
 R11F_EXPORT
-r11f_error_t r11f_vm_invoke(r11f_vm_t *vm,
-                            char const *class_name,
-                            char const *method_name,
-                            char const *method_descriptor,
-                            uint16_t argc,
-                            uint32_t argv[],
-                            void *output);
+r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
+                                   char const *class_name,
+                                   char const *method_name,
+                                   char const *method_descriptor,
+                                   uint16_t argc,
+                                   uint32_t argv[],
+                                   void *output);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

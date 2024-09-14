@@ -19,14 +19,13 @@ static r11f_error_t vm_get_class(r11f_vm_t *vm,
                                  char const *class_name,
                                  size_t class_name_len,
                                  r11f_class_t **output);
-
 static void get_class_name(r11f_class_t *class,
                            r11f_constant_methodref_info_t *methodref_info,
                            char const **out_class_name,
                            uint16_t *out_class_name_len);
 
 R11F_EXPORT
-r11f_error_t r11f_vm_invoke(r11f_vm_t *vm,
+r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
                             char const *class_name,
                             char const *method_name,
                             char const *method_descriptor,
@@ -182,7 +181,6 @@ static r11f_error_t vm_invokestatic(r11f_vm_t *vm) {
         return R11F_ERR_out_of_memory;
     }
 
-    vm->current_frame = frame;
     return R11F_success;
 }
 
@@ -227,6 +225,7 @@ static r11f_error_t vm_get_class(r11f_vm_t *vm,
         return err;
     }
 
+    // TODO: if there's a static initializer, invoke it
     *output = class;
     return R11F_success;
 }
