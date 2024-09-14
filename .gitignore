@@ -6,7 +6,7 @@
 *.so
 r11f
 
-test/*.class
+test/**/*.class
 !test/Object.class
 rt/**/*.class
 rt/**/*.MF

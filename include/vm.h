@@ -22,7 +22,6 @@ r11f_error_t r11f_vm_invoke(r11f_vm_t *vm,
                             uint16_t argc,
                             uint32_t argv[],
                             void *output);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

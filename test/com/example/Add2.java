@@ -1,6 +1,6 @@
-package tech.icey.r11f.test;
+package com.example;
 
-public class Add {
+public class Add2 {
     public static int add(int a, int b) {
         return a + b;
     }
