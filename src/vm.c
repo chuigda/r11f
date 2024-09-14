@@ -8,7 +8,7 @@
 #include "clsmgr.h"
 #include "frame.h"
 
-static void imp_execute(r11f_vm_t *vm);
+static void imp_execute(r11f_vm_t *vm, void *output);
 
 R11F_EXPORT
 r11f_error_t r11f_vm_invoke(r11f_vm_t *vm,
@@ -16,8 +16,8 @@ r11f_error_t r11f_vm_invoke(r11f_vm_t *vm,
                             char const *method_name,
                             char const *method_descriptor,
                             uint16_t argc,
-                            uint32_t argv[])
-{
+                            uint32_t argv[],
+                            void *output) {
     r11f_class_t *clazz = r11f_classmgr_find_class(vm->classmgr, class_name);
     if (!clazz) {
         return R11F_ERR_class_not_found;
@@ -56,12 +56,12 @@ r11f_error_t r11f_vm_invoke(r11f_vm_t *vm,
     }
     vm->current_frame = frame;
 
-    imp_execute(vm);
+    imp_execute(vm, output);
 
     return R11F_success;
 }
 
-static void imp_execute(r11f_vm_t *vm) {
+static void imp_execute(r11f_vm_t *vm, void *output) {
     while (vm->current_frame) {
         uint8_t insc = vm->current_frame->code[vm->current_frame->pc];
         switch (insc) {
@@ -86,12 +86,18 @@ static void imp_execute(r11f_vm_t *vm) {
                 break;
             }
             case R11F_ireturn: {
-                fprintf(
-                    stderr,
-                    "ireturn: %d\n",
-                    vm->current_frame->stack[vm->current_frame->sp]
-                );
+                int32_t result = vm->current_frame->stack[vm->current_frame->sp];
+
                 vm->current_frame = vm->current_frame->parent;
+                if (!vm->current_frame) {
+                    if (output) {
+                        *(int32_t*)output = result;
+                    }
+                }
+                else {
+                    vm->current_frame->stack[vm->current_frame->sp] = result;
+                    vm->current_frame->sp++;
+                }
                 break;
             }
             default: {

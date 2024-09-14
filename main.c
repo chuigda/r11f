@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "alloc.h"
@@ -80,19 +79,24 @@ void drill_main(void) {
 
     r11f_vm_t vm;
     vm.classmgr = mgr;
+    int32_t output;
+    fprintf(stderr, "r11f_vm_invoke(&vm, \"tech/icey/r11f/test/Add\", \"add\", \"(II)I\", 2, (uint32_t[]){114, 514}, &output)\n");
     err = r11f_vm_invoke(
         &vm,
         "tech/icey/r11f/test/Add",
         "add",
         "(II)I",
         2,
-        (uint32_t[]){114, 514}
+        (uint32_t[]){114, 514},
+        &output
     );
 
     if (err != R11F_success) {
         fprintf(stderr, "error: %s\n", r11f_explain_error(err));
         assert(0 && "failed to invoke method");
     }
+
+    fprintf(stderr, "output: %d\n", output);
 
     r11f_memstat_t stat = r11f_memstat_get();
     fprintf(
