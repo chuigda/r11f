@@ -31,6 +31,7 @@ static const char* g_error_strings_en_us[] = {
     [R11F_ERR_not_implemented_instruction] = "not implemented instruction"
 };
 
+R11F_EXPORT
 char const* r11f_explain_error(r11f_error_t error) {
     char const* const* strings = g_error_strings_en_us;
     char const* ret = "unknown error";

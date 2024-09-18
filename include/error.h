@@ -1,6 +1,7 @@
 #ifndef R11F_ERROR_H
 #define R11F_ERROR_H
 
+#include "defs.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -25,6 +26,7 @@ enum {
     R11F_ERR_not_implemented_instruction = 10,
 };
 
+R11F_EXPORT
 char const* r11f_explain_error(r11f_error_t error);
 
 #ifdef __cplusplus
