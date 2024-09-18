@@ -12,7 +12,9 @@ static const char* g_error_strings_zh_cn[] = {
     [R11F_ERR_method_not_found] = "未找到方法",
     [R11F_ERR_cannot_invoke_abstract_method] = "不能调用抽象方法",
     [R11F_ERR_cannot_invoke_native_method] = "不能调用本地方法",
-    [R11F_ERR_cannot_invoke_non_static_method] = "不能调用非静态方法"
+    [R11F_ERR_cannot_invoke_non_static_method] = "不能调用非静态方法",
+    [R11F_ERR_cannot_load_class] = "不能加载类",
+    [R11F_ERR_not_implemented_instruction] = "未实现的指令"
 };
 
 static const char* g_error_strings_en_us[] = {
@@ -24,7 +26,9 @@ static const char* g_error_strings_en_us[] = {
     [R11F_ERR_method_not_found] = "method not found",
     [R11F_ERR_cannot_invoke_abstract_method] = "cannot invoke abstract method",
     [R11F_ERR_cannot_invoke_native_method] = "cannot invoke native method",
-    [R11F_ERR_cannot_invoke_non_static_method] = "cannot invoke non-static method"
+    [R11F_ERR_cannot_invoke_non_static_method] = "cannot invoke non-static method",
+    [R11F_ERR_cannot_load_class] = "cannot load class",
+    [R11F_ERR_not_implemented_instruction] = "not implemented instruction"
 };
 
 char const* r11f_explain_error(r11f_error_t error) {

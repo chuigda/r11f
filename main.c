@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -7,6 +8,8 @@
 #include "cfdump.h"
 #include "clsmgr.h"
 #include "error.h"
+#include "forward.h"
+#include "frame.h"
 #include "vm.h"
 
 void drill_main(void);
@@ -66,14 +69,13 @@ void drill_main(void) {
     vm.classmgr = r11f_classmgr_alloc();;
     vm.current_frame = NULL;
 
-    int32_t output;
+    int64_t output;
     r11f_error_t err = r11f_vm_invoke_static(
         &vm,
         "com/example/Add",
-        "add",
-        "(II)I",
-        2,
-        (uint32_t[]){114, 514},
+        "add_mixed",
+        "(JI)J",
+        (r11f_value_t[]){{.i64=2147483648}, {.i32=124875}},
         &output
     );
 
@@ -82,6 +84,8 @@ void drill_main(void) {
         assert(0 && "failed to invoke method");
     }
 
-    fprintf(stderr, "r11f_vm_invoke(&vm, \"com/example/Add\", \"add\", \"(II)I\", 2, (uint32_t[]){114, 514}, &output) = %d\n", output);
+    fprintf(stderr, "r11f_vm_invoke(&vm, \"com/example/Add\", \"add_mixed\", \"(JI)J\", { 2147483648, 124875 }, &output) = %" PRId64 "\n", output);
     r11f_classmgr_free(vm.classmgr);
+
+    assert(output == 2147483648L + 124875L && "unexpected output");
 }

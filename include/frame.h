@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-typedef union u_r11f_stack_value {
+typedef union u_r11f_value {
     int8_t i8;
     int16_t i16;
     int32_t i32;
@@ -20,11 +20,8 @@ typedef union u_r11f_stack_value {
     double f64;
 
     uint32_t u32;
-    struct {
-        uint32_t byte1;
-        uint32_t byte2;
-    } u32_2;
-} r11f_stack_value_t;
+    void *ptr;
+} r11f_value_t;
 
 struct st_r11f_frame {
     r11f_frame_t *parent;
@@ -40,22 +37,14 @@ struct st_r11f_frame {
     uint16_t max_stack;
     uint16_t sp;
 
-    r11f_stack_value_t *stack;
-    uint32_t *locals;
+    r11f_value_t *stack;
+    r11f_value_t *locals;
 
-    uint64_t data[];
+    r11f_value_t data[];
 };
 
 R11F_EXPORT r11f_frame_t*
 r11f_frame_alloc(r11f_class_t *clazz, r11f_method_info_t *method_info);
-
-R11F_EXPORT int64_t r11f_frame_get_int64(r11f_frame_t *frame, uint16_t entry);
-R11F_EXPORT void
-r11f_frame_set_int64(r11f_frame_t *frame, uint16_t entry, int64_t value);
-
-R11F_EXPORT double r11f_frame_get_double(r11f_frame_t *frame, uint16_t entry);
-R11F_EXPORT void
-r11f_frame_set_double(r11f_frame_t *frame, uint16_t entry, double value);
 
 #ifdef __cplusplus
 } /* extern "C" */

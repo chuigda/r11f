@@ -18,6 +18,9 @@ static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm);
 static void invoke_copyargs(r11f_frame_t *src,
                             r11f_frame_t *dst,
                             char const* descriptor);
+static void invoke_copyargs2(r11f_value_t *src_stack,
+                             r11f_value_t *dst_locals,
+                             char const* descriptor);
 static r11f_error_t vm_get_class(r11f_vm_t *vm,
                                  char const *class_name,
                                  uint16_t class_name_len,
@@ -29,12 +32,11 @@ static void get_class_name(r11f_class_t *class,
 
 R11F_EXPORT
 r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
-                            char const *class_name,
-                            char const *method_name,
-                            char const *method_descriptor,
-                            uint16_t argc,
-                            uint32_t argv[],
-                            void *output) {
+                                   char const *class_name,
+                                   char const *method_name,
+                                   char const *method_descriptor,
+                                   r11f_value_t argv[],
+                                   void *output) {
     r11f_class_t *clazz;
     r11f_error_t err =
         vm_get_class(vm, class_name, strlen(class_name), &clazz);
@@ -70,9 +72,7 @@ r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
         return R11F_ERR_out_of_memory;
     }
 
-    for (uint16_t i = 0; i < argc; i++) {
-        frame->locals[i] = argv[i];
-    }
+    invoke_copyargs2(argv, frame->locals, method_descriptor);
     vm->current_frame = frame;
 
     return vm_execute(vm, output);
@@ -81,18 +81,26 @@ r11f_error_t r11f_vm_invoke_static(r11f_vm_t *vm,
 static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
     while (vm->current_frame) {
         r11f_frame_t *frame = vm->current_frame;
-        r11f_stack_value_t *stack = frame->stack;
-        uint32_t *locals = frame->locals;
+        r11f_value_t *stack = frame->stack;
+        r11f_value_t *locals = frame->locals;
 
         uint8_t insc = frame->code[frame->pc];
         switch (insc) {
             case R11F_iload_0:
-                stack[frame->sp].i32 = *(int32_t*)(locals + 0);
+            case R11F_lload_0:
+                stack[frame->sp] = locals[0];
                 frame->sp++;
                 frame->pc += 1;
                 break;
             case R11F_iload_1:
-                stack[frame->sp].i32 = *(int32_t*)(locals + 1);
+            case R11F_lload_1:
+                stack[frame->sp] = locals[1];
+                frame->sp++;
+                frame->pc += 1;
+                break;
+            case R11F_iload_2:
+            case R11F_lload_2:
+                stack[frame->sp] = locals[2];
                 frame->sp++;
                 frame->pc += 1;
                 break;
@@ -105,15 +113,40 @@ static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
                 frame->pc++;
                 break;
             }
-            case R11F_ireturn: {
+            case R11F_ladd: {
+                int64_t a = stack[frame->sp - 1].i64;
+                int64_t b = stack[frame->sp - 2].i64;
+
+                stack[frame->sp - 2] =
+                    (r11f_value_t) { .i64 = a + b };
+                frame->sp -= 1;
+                frame->pc++;
+                break;
+            }
+            case R11F_i2l: {
+                stack[frame->sp - 1] =
+                    (r11f_value_t) { .i64 = stack[frame->sp - 1].i32 };
+
+                frame->pc++;
+                break;
+            }
+            case R11F_ireturn:
+            case R11F_lreturn: {
                 vm->current_frame = frame->parent;
                 if (vm->current_frame) {
-                    vm->current_frame->stack[vm->current_frame->sp].i32
-                        = stack[frame->sp - 1].i32;
+                    vm->current_frame->stack[vm->current_frame->sp]
+                        = stack[frame->sp - 1];
                     vm->current_frame->sp++;
                 }
                 else {
-                    *(int32_t*)output = stack[frame->sp - 1].i32;
+                    switch (insc) {
+                        case R11F_ireturn:
+                            *(int32_t*)output = stack[frame->sp - 1].i32;
+                            break;
+                        case R11F_lreturn:
+                            *(int64_t*)output = stack[frame->sp - 1].i64;
+                            break;
+                    }
                 }
                 r11f_free(frame);
                 break;
@@ -126,7 +159,6 @@ static r11f_error_t vm_execute(r11f_vm_t *vm, void *output) {
                 break;
             }
             default: {
-                fprintf(stderr, "unknown instruction: %02x\n", insc);
                 return R11F_ERR_malformed_classfile;
             }
         }
@@ -200,6 +232,12 @@ static r11f_error_t vm_exec_invokestatic(r11f_vm_t *vm) {
 static void invoke_copyargs(r11f_frame_t *src,
                             r11f_frame_t *dst,
                             char const* descriptor) {
+    invoke_copyargs2(src->stack, dst->locals, descriptor);
+}
+
+static void invoke_copyargs2(r11f_value_t *src_stack,
+                             r11f_value_t *dst_locals,
+                             char const* descriptor) {
     assert(*descriptor == '(');
 
     uint16_t src_idx = 0;
@@ -207,7 +245,6 @@ static void invoke_copyargs(r11f_frame_t *src,
 
     descriptor += 1;
     while (*descriptor != ')') {
-        assert(dst_idx < dst->max_locals);
         switch (*descriptor) {
             case 'B':
             case 'C':
@@ -215,15 +252,15 @@ static void invoke_copyargs(r11f_frame_t *src,
             case 'I':
             case 'S':
             case 'Z': {
-                dst->locals[dst_idx] = src->stack[src_idx].u32;
+                dst_locals[dst_idx] = src_stack[src_idx];
                 src_idx++;
                 dst_idx++;
                 break;
             }
             case 'D':
             case 'J': {
-                dst->locals[dst_idx] = src->stack[src_idx].u32_2.byte1;
-                dst->locals[dst_idx + 1] = src->stack[src_idx].u32_2.byte2;
+                dst_locals[dst_idx] = src_stack[src_idx];
+                dst_locals[dst_idx + 1] = src_stack[src_idx];
                 src_idx++;
                 dst_idx += 2;
                 break;
@@ -233,7 +270,7 @@ static void invoke_copyargs(r11f_frame_t *src,
                     descriptor++;
                 }
 
-                dst->locals[dst_idx] = src->locals[src_idx];
+                dst_locals[dst_idx] = src_stack[src_idx];
                 src_idx++;
                 dst_idx++;
                 break;
@@ -247,7 +284,7 @@ static void invoke_copyargs(r11f_frame_t *src,
                         descriptor++;
                     }
                 }
-                dst->locals[dst_idx] = src->locals[src_idx];
+                dst_locals[dst_idx] = src_stack[src_idx];
                 src_idx++;
                 dst_idx++;
                 break;
@@ -259,6 +296,8 @@ static void invoke_copyargs(r11f_frame_t *src,
 
         descriptor += 1;
     }
+
+    assert(*descriptor == ')');
 }
 
 static r11f_error_t vm_get_class(r11f_vm_t *vm,

@@ -69,7 +69,7 @@ r11f-log:
 
 build/$(EXECUTABLE_NAME): build/main.o build/$(SHARED_LIB_NAME)
 	@$(call LOG,LINK,$@)
-	@$(CC) $(CFLAGS) -L./build -lr11f -o $@ $^
+	@$(CC) $(CFLAGS) -L./build -lr11f -Wl,-rpath=./build -o $@ $^
 
 build/main.o: main.c $(HEADER_FILES)
 	$(call COMPILE,$<,$@)
