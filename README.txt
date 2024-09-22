@@ -1,4 +1,4 @@
-R11F: JVM implementation in C
+Р11Ф: JVM implementation in C
 
 Roadmap:
 - [x] class file parsing
